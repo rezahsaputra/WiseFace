@@ -17,6 +17,9 @@ venv/
 .pytest_cache/
 .mypy_cache/
 
+# Build / logs
+*.log
+
 # OS / editor
 .DS_Store
 Thumbs.db

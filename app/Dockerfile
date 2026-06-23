@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Pinned base image (no `latest` in production, PRD §9.7).
 FROM python:3.11-slim-bookworm
 
@@ -13,7 +14,10 @@ ENV PYTHONUNBUFFERED=1 \
     TF_NUM_INTEROP_THREADS=1 \
     TF_CPP_MIN_LOG_LEVEL=2 \
     DEEPFACE_HOME=/home/app/.deepface \
-    PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc \
+    # Abort a stalled download after 120s instead of hanging the whole build.
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # OpenCV (headless) still needs libGL + glib at runtime.
 RUN apt-get update \
@@ -29,7 +33,11 @@ RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Cache-mount keeps downloaded wheels across build attempts, so a retry after a
+# flaky-network failure doesn't re-download the whole ~500 MB ML stack.
+# --retries lets pip recover from a stalled socket instead of giving up.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --retries 10 -r requirements.txt
 
 COPY . /app/app
 # Make the package importable as `app` (WORKDIR/app/app/__init__.py).
