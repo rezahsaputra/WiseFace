@@ -7,6 +7,14 @@ logical threads — leaving headroom for Nginx/Prometheus/Grafana/WSL2.
 """
 import os
 
+# Import at module load, NOT inside child_exit: child_exit runs from the SIGCHLD
+# handler, and importing during signal handling can hit a partially-initialized
+# module (circular import) and crash the arbiter.
+try:
+    from prometheus_client import multiprocess as _prom_multiprocess
+except Exception:  # prometheus_client always present, but never crash the master
+    _prom_multiprocess = None
+
 # --- Workers ---
 # Overridable via env so the same image can run on different hardware.
 workers = int(os.environ.get("GUNICORN_WORKERS", "10"))
@@ -36,7 +44,5 @@ loglevel = os.environ.get("GUNICORN_LOGLEVEL", "info")
 def child_exit(server, worker):
     """Required for prometheus_client multiprocess mode: clean up the dead
     worker's metric files so /metrics doesn't double-count."""
-    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
-        from prometheus_client import multiprocess
-
-        multiprocess.mark_process_dead(worker.pid)
+    if _prom_multiprocess and os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        _prom_multiprocess.mark_process_dead(worker.pid)
