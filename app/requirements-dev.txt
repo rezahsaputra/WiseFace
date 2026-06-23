@@ -1,0 +1,6 @@
+# Dev/test dependencies. Installed on top of requirements.txt in CI / local dev.
+-r requirements.txt
+pytest==8.3.4
+pytest-asyncio==0.25.2
+respx==0.22.0
+pillow==11.1.0

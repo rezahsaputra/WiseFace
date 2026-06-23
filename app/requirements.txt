@@ -1,0 +1,23 @@
+# Pinned for reproducible builds (no `latest` in production).
+# Web stack
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+gunicorn==23.0.0
+python-multipart==0.0.20
+httpx==0.28.1
+
+# Face recognition stack
+deepface==0.0.93
+tf-keras==2.18.0
+tensorflow-cpu==2.18.0
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+
+# Metrics
+prometheus-client==0.21.1
+
+# Settings / validation
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# Test-only deps live in requirements-dev.txt

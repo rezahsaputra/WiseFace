@@ -1,0 +1,18 @@
+# Prometheus scrape config. The API exposes aggregated multiprocess metrics on
+# /metrics over the internal Docker network (PRD §5).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: face-compare-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+        labels:
+          service: face-compare-api
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
