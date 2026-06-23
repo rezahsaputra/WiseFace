@@ -29,3 +29,5 @@ Thumbs.db
 
 # Local model cache (mounted as a Docker volume in prod)
 .deepface/
+
+testdata/
