@@ -57,11 +57,15 @@ class Settings(BaseSettings):
     align: bool = True
 
     # --- Calibration (PLACEHOLDER values; replace with Milestone 0 outputs) ---
-    # Cosine-similarity -> 0..100 confidence affine mapping. These defaults are
+    # Cosine-similarity -> 0..100 confidence mapping. These defaults are
     # intentionally provisional; real calibration comes from the FAR/FRR test
     # set built in Milestone 0. They are NOT interchangeable with Face++'s.
-    confidence_scale: float = 100.0
-    confidence_offset: float = 0.0
+    # method: "linear" (affine) | "logistic" (S-curve, expected production form).
+    calibration_method: str = "linear"
+    confidence_scale: float = 100.0       # linear
+    confidence_offset: float = 0.0        # linear
+    logistic_midpoint: float = 0.5        # logistic: similarity at confidence 50
+    logistic_steepness: float = 10.0      # logistic: slope of the S-curve
     # Structurally Face++-compatible threshold tiers. Recomputed in Milestone 0.
     threshold_1e_3: float = 62.327
     threshold_1e_4: float = 69.101
@@ -77,6 +81,15 @@ class Settings(BaseSettings):
     #   2. API_CREDENTIALS_FILE -> path to a JSON file with the same array
     api_credentials: Optional[str] = None
     api_credentials_file: Optional[str] = None
+
+    @field_validator("calibration_method")
+    @classmethod
+    def _validate_calibration(cls, v: str) -> str:
+        if v not in {"linear", "logistic"}:
+            raise ValueError(
+                f"calibration_method {v!r} must be 'linear' or 'logistic'"
+            )
+        return v
 
     @field_validator("model_name")
     @classmethod

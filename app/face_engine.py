@@ -13,6 +13,7 @@ from typing import Optional
 import numpy as np
 
 from . import errors
+from .calibration import Calibrator
 from .config import Settings
 
 logger = logging.getLogger("facecompare.engine")
@@ -83,9 +84,15 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 def similarity_to_confidence(similarity: float, settings: Settings) -> float:
     """Map cosine similarity to a 0-100 Face++-style confidence.
 
-    PLACEHOLDER affine calibration (see config). Replace scale/offset with the
-    Milestone 0 calibration so confidence and thresholds are on the same scale.
+    Delegates to the configured Calibrator (linear or logistic). The default
+    params are PLACEHOLDERs — replace with the Milestone 0 calibration so
+    confidence and thresholds are on the same scale.
     """
-    conf = similarity * settings.confidence_scale + settings.confidence_offset
-    conf = max(0.0, min(100.0, conf))
-    return round(conf, 3)
+    calibrator = Calibrator(
+        method=settings.calibration_method,
+        scale=settings.confidence_scale,
+        offset=settings.confidence_offset,
+        midpoint=settings.logistic_midpoint,
+        steepness=settings.logistic_steepness,
+    )
+    return calibrator.confidence(similarity)
