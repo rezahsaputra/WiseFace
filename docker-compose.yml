@@ -87,7 +87,7 @@ services:
       - grafana_data:/var/lib/grafana
     mem_limit: 512m
     ports:
-      - "3000:3000"
+      - "3001:3000"
     networks:
       - facenet
 
