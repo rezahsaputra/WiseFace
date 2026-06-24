@@ -133,3 +133,40 @@ def test_no_identity_param_accepted(client, jpeg_bytes, fake_embeddings):
     )
     assert r.status_code == 200
     assert "employee_id" not in r.json()
+
+
+# --- Concurrency control (burst hardening) ----------------------------------
+def test_inference_serialized_per_worker(client):
+    # A CapacityLimiter enforces one compare at a time per worker by default,
+    # closing the OpenCV detector thread-safety race seen under burst.
+    assert app.state.inference_limiter.total_tokens == 1
+
+
+def test_concurrency_limit_exceeded_returns_busy(client, jpeg_bytes, fake_embeddings):
+    # When the worker is already saturated, excess load is shed fast as a
+    # Face++-shaped CONCURRENCY_LIMIT_EXCEEDED (HTTP 403) instead of queueing.
+    fake_embeddings(np.ones(512), np.ones(512))
+    app.state.max_inflight = 2
+    app.state.inflight = 2  # simulate a fully-saturated worker
+    try:
+        b64 = base64.b64encode(jpeg_bytes).decode()
+        r = client.post(
+            "/facepp/v3/compare",
+            data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+        )
+        assert r.status_code == 403
+        assert r.json()["error_message"] == errors.CONCURRENCY_LIMIT_EXCEEDED
+    finally:
+        app.state.inflight = 0
+
+
+def test_inflight_counter_resets_after_request(client, jpeg_bytes, fake_embeddings):
+    # A completed request must release its in-flight slot, even on the happy path.
+    fake_embeddings(np.ones(512), np.ones(512))
+    b64 = base64.b64encode(jpeg_bytes).decode()
+    r = client.post(
+        "/facepp/v3/compare",
+        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+    )
+    assert r.status_code == 200
+    assert app.state.inflight == 0

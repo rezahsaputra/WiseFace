@@ -74,6 +74,29 @@ class Settings(BaseSettings):
     # --- Image fetching (image_url inputs) ---
     image_download_timeout_s: float = 5.0
     max_image_bytes: int = 10 * 1024 * 1024  # 10 MB, mirrors Face++ size guard
+    # Downscale any input whose longest side exceeds this (px) before detection.
+    # Face detection cost scales with pixel count, and the detected face is
+    # resized to the model's input (160px) regardless, so a large phone photo
+    # gains nothing from full resolution. 0 disables downscaling.
+    max_image_dim: int = 1024
+
+    # --- Concurrency (burst hardening, PRD §9.5) ---
+    # Compares actually executed in parallel per worker. Default 1 because the
+    # OpenCV detector's CascadeClassifier is NOT thread-safe; running >1 compare
+    # per process races and crashes (cv2 getScaleData assertion). Each worker is
+    # already a separate process, so true parallelism comes from the worker count.
+    inference_concurrency: int = 1
+    # Max compares a single worker will hold (running + queued) before shedding
+    # load with CONCURRENCY_LIMIT_EXCEEDED (HTTP 403). Opt-in safety valve,
+    # DISABLED by default (0 = unbounded queue) because:
+    #   * with inference_concurrency=1, a burst already completes safely — it
+    #     just queues; latency rises but stays under the 30s worker timeout.
+    #   * the cap is PER WORKER, but HTTP clients pool keepalive connections that
+    #     concentrate on a few workers, so a low cap sheds load unevenly. Only
+    #     enable once load is spread evenly across workers (e.g. nginx upstream
+    #     `least_conn` + disabled upstream keepalive), then set this to the
+    #     per-worker queue depth whose wait you're willing to tolerate.
+    max_concurrent_requests: int = 0
 
     # --- Credentials ---
     # Two ways to supply the internal credential list:

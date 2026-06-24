@@ -112,6 +112,9 @@ All settings are environment variables (see `.env.example`). Key ones:
 | `CONFIDENCE_SCALE`, `CONFIDENCE_OFFSET` | `100.0`, `0.0` | Similarity→confidence affine calibration (placeholder) |
 | `THRESHOLD_1E_3/4/5` | placeholder | Threshold tiers (recompute in Milestone 0) |
 | `GUNICORN_WORKERS` | `10` | RAM-derived worker ceiling on the 16 GB host |
+| `MAX_IMAGE_DIM` | `1024` | Downscale longest side before detection (px); 0 disables |
+| `INFERENCE_CONCURRENCY` | `1` | Compares per worker. Keep 1 — the OpenCV detector isn't thread-safe |
+| `MAX_CONCURRENT_REQUESTS` | `0` | Per-worker load-shed cap → 403 `CONCURRENCY_LIMIT_EXCEEDED`; 0 disables |
 
 ## Testing
 

@@ -40,7 +40,28 @@ class ImageSlot:
         )
 
 
-def _decode_bytes(buf: bytes, slot_name: str) -> np.ndarray:
+def _maybe_downscale(img: np.ndarray, settings: Settings) -> np.ndarray:
+    """Scale `img` down so its longest side is <= settings.max_image_dim.
+
+    Detection cost scales with pixel count; the detected face is resized to the
+    model's 160px input anyway, so shrinking oversized inputs cuts CPU with no
+    meaningful accuracy loss. Never upscales. Disabled when max_image_dim <= 0.
+    """
+    max_dim = settings.max_image_dim
+    if max_dim <= 0:
+        return img
+    h, w = img.shape[:2]
+    longest = max(h, w)
+    if longest <= max_dim:
+        return img
+    scale = max_dim / longest
+    new_w = max(1, round(w * scale))
+    new_h = max(1, round(h * scale))
+    # INTER_AREA is the recommended filter for shrinking.
+    return cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
+def _decode_bytes(buf: bytes, settings: Settings, slot_name: str) -> np.ndarray:
     """Decode raw image bytes to a BGR ndarray, or raise INVALID_IMAGE."""
     if not buf:
         raise errors.CompareError(errors.INVALID_IMAGE)
@@ -48,7 +69,7 @@ def _decode_bytes(buf: bytes, slot_name: str) -> np.ndarray:
     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if img is None or img.size == 0:
         raise errors.CompareError(errors.INVALID_IMAGE)
-    return img
+    return _maybe_downscale(img, settings)
 
 
 def _from_base64(data: str, settings: Settings, slot_name: str) -> np.ndarray:
@@ -61,7 +82,7 @@ def _from_base64(data: str, settings: Settings, slot_name: str) -> np.ndarray:
         raise errors.CompareError(errors.INVALID_IMAGE)
     if len(raw) > settings.max_image_bytes:
         raise errors.CompareError(errors.IMAGE_TOO_LARGE)
-    return _decode_bytes(raw, slot_name)
+    return _decode_bytes(raw, settings, slot_name)
 
 
 def _from_url(url: str, settings: Settings, slot_name: str) -> np.ndarray:
@@ -76,13 +97,13 @@ def _from_url(url: str, settings: Settings, slot_name: str) -> np.ndarray:
         raise errors.CompareError(errors.IMAGE_DOWNLOAD_FAILED)
     if len(raw) > settings.max_image_bytes:
         raise errors.CompareError(errors.IMAGE_TOO_LARGE)
-    return _decode_bytes(raw, slot_name)
+    return _decode_bytes(raw, settings, slot_name)
 
 
 def _from_file(buf: bytes, settings: Settings, slot_name: str) -> np.ndarray:
     if len(buf) > settings.max_image_bytes:
         raise errors.CompareError(errors.IMAGE_TOO_LARGE)
-    return _decode_bytes(buf, slot_name)
+    return _decode_bytes(buf, settings, slot_name)
 
 
 def resolve_slot(slot: ImageSlot, settings: Settings) -> np.ndarray:

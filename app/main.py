@@ -18,6 +18,8 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import anyio
+from anyio import CapacityLimiter
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -40,6 +42,15 @@ async def lifespan(app: FastAPI):
     )
     app.state.settings = settings
     app.state.credentials = settings.load_credentials()
+    # Serialize inference within this worker. The default of 1 closes the
+    # OpenCV CascadeClassifier thread-safety race (cv2 getScaleData crash) that
+    # surfaces under burst, since starlette's default threadpool would otherwise
+    # run many compares per worker at once. True parallelism is the worker count.
+    app.state.inference_limiter = CapacityLimiter(settings.inference_concurrency)
+    # Per-worker load-shedding: bound how many compares a worker will hold
+    # (running + queued) before returning CONCURRENCY_LIMIT_EXCEEDED.
+    app.state.inflight = 0
+    app.state.max_inflight = settings.max_concurrent_requests
     # Preload the model so the first real request doesn't pay cold-start cost.
     # Skipped when SKIP_MODEL_WARMUP is set (tests / fast local boots).
     if not os.environ.get("SKIP_MODEL_WARMUP"):
@@ -125,17 +136,28 @@ def _error_response(err: errors.CompareError, request_id: str, started: float) -
 async def _compare(request: Request, endpoint: str) -> Response:
     started = time.perf_counter()
     request_id = str(uuid.uuid4())
-    settings = request.app.state.settings
+    state = request.app.state
+    settings = state.settings
     client_label = "unknown"
 
+    # Shed load fast if this worker is already saturated, so a burst degrades to
+    # retryable rejections instead of requests queueing past the 30s timeout.
+    if state.max_inflight and state.inflight >= state.max_inflight:
+        metrics.REQUESTS.labels(
+            client_label, endpoint, errors.CONCURRENCY_LIMIT_EXCEEDED
+        ).inc()
+        return _error_response(errors.concurrency_limit_error(), request_id, started)
+
+    state.inflight += 1
     try:
         api_key, api_secret, slot1, slot2 = await _parse_request(request)
         cred = _authenticate(request, api_key, api_secret)
         client_label = cred.client
 
-        # Offload the blocking CPU-bound pipeline off the event loop.
-        confidence = await run_in_threadpool(
-            run_comparison, slot1, slot2, settings
+        # Offload the blocking CPU-bound pipeline off the event loop, capped by
+        # the inference limiter so a worker runs one compare at a time (default).
+        confidence = await anyio.to_thread.run_sync(
+            run_comparison, slot1, slot2, settings, limiter=state.inference_limiter
         )
 
         time_used = int((time.perf_counter() - started) * 1000)
@@ -165,6 +187,9 @@ async def _compare(request: Request, endpoint: str) -> Response:
             request_id,
             started,
         )
+
+    finally:
+        state.inflight -= 1
 
 
 @app.post("/facepp/v3/compare")

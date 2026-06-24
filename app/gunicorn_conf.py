@@ -19,7 +19,10 @@ except Exception:  # prometheus_client always present, but never crash the maste
 # Overridable via env so the same image can run on different hardware.
 workers = int(os.environ.get("GUNICORN_WORKERS", "10"))
 worker_class = "uvicorn.workers.UvicornWorker"
-# One request at a time per worker keeps the CPU-bound inference predictable.
+# NOTE: `threads` does not bound concurrency for the async UvicornWorker — the
+# event loop offloads each compare to a threadpool. One-compare-at-a-time per
+# worker is enforced in the app via an anyio CapacityLimiter (INFERENCE_CONCURRENCY,
+# default 1); load shedding is bounded by MAX_CONCURRENT_REQUESTS. See app/main.py.
 threads = 1
 
 # --- Networking ---
