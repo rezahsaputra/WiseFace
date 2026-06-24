@@ -36,8 +36,31 @@ COPY requirements.txt .
 # Cache-mount keeps downloaded wheels across build attempts, so a retry after a
 # flaky-network failure doesn't re-download the whole ~500 MB ML stack.
 # --retries lets pip recover from a stalled socket instead of giving up.
+#
+# deepface (and its retina-face / mtcnn deps) require the `tensorflow`
+# distribution, which on Linux is the GPU build: pip installs it ALONGSIDE our
+# pinned tensorflow-cpu and drags in ~3 GB of `nvidia-*` CUDA wheels we never
+# use. `tensorflow` and `tensorflow-cpu` are different distributions that ship
+# the SAME `tensorflow/` package, so pip can't dedupe them by resolution. We
+# fix the end state in this one layer instead:
+#   1. install everything (tensorflow + tensorflow-cpu both land);
+#   2. drop the GPU `tensorflow` distribution — this also deletes the shared
+#      `tensorflow/` files, since they're recorded under its dist-info;
+#   3. force-reinstall tensorflow-cpu (--no-deps, from cache) to restore those
+#      files without the GPU distribution;
+#   4. purge the now-orphaned nvidia CUDA wheels (pip doesn't drop them on its
+#      own). tensorflow-cpu has no nvidia deps, so this is safe.
+# `import tensorflow` still works (provided by tensorflow-cpu); `pip check` will
+# note deepface/retina-face/mtcnn "require tensorflow" by dist name — that's
+# expected and harmless, so we don't run it here.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --retries 10 -r requirements.txt
+    pip install --retries 10 -r requirements.txt \
+    && pip uninstall -y tensorflow \
+    && pip install --retries 10 --no-deps --force-reinstall tensorflow-cpu==2.18.0 \
+    && { pip freeze | grep -i '^nvidia-' || true; } > /tmp/nvidia-cuda.txt \
+    && if [ -s /tmp/nvidia-cuda.txt ]; then pip uninstall -y -r /tmp/nvidia-cuda.txt; fi \
+    && rm -f /tmp/nvidia-cuda.txt \
+    && python -c "import tensorflow as tf; print('tensorflow-cpu OK', tf.__version__)"
 
 COPY . /app/app
 # Make the package importable as `app` (WORKDIR/app/app/__init__.py).
