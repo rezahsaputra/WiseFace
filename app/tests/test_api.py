@@ -21,7 +21,8 @@ def client():
 
 
 def _auth():
-    return {"api_key": "key-a", "api_secret": "secret-a"}
+    """Credentials as query params — matches Face++ convention (?api_key=...&api_secret=...)."""
+    return "?api_key=key-a&api_secret=secret-a"
 
 
 def test_health(client):
@@ -34,8 +35,8 @@ def test_compare_success_shape(client, jpeg_bytes, fake_embeddings):
     fake_embeddings(np.ones(512), np.ones(512))  # identical -> high confidence
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": b64, "image_base64_2": b64},
     )
     assert r.status_code == 200
     body = r.json()
@@ -49,8 +50,8 @@ def test_v3_alias_works(client, jpeg_bytes, fake_embeddings):
     fake_embeddings(np.ones(512), np.ones(512))
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/v3/compare",
-        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+        "/v3/compare" + _auth(),
+        data={"image_base64_1": b64, "image_base64_2": b64},
     )
     assert r.status_code == 200
 
@@ -58,8 +59,8 @@ def test_v3_alias_works(client, jpeg_bytes, fake_embeddings):
 def test_auth_failure(client, jpeg_bytes):
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={"api_key": "key-a", "api_secret": "wrong", "image_base64_1": b64, "image_base64_2": b64},
+        "/facepp/v3/compare?api_key=key-a&api_secret=wrong",
+        data={"image_base64_1": b64, "image_base64_2": b64},
     )
     assert r.status_code == 401
     assert r.json()["error_message"] == errors.AUTHENTICATION_ERROR
@@ -69,8 +70,8 @@ def test_missing_image_argument(client, jpeg_bytes, fake_embeddings):
     fake_embeddings(np.ones(512), np.ones(512))
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": b64},  # image2 missing
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": b64},  # image2 missing
     )
     assert r.status_code == 400
     assert r.json()["error_message"] == errors.MISSING_ARGUMENTS
@@ -80,8 +81,8 @@ def test_invalid_image(client, fake_embeddings):
     fake_embeddings(np.ones(512), np.ones(512))
     bad = base64.b64encode(b"not an image").decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": bad, "image_base64_2": bad},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": bad, "image_base64_2": bad},
     )
     assert r.status_code == 400
     assert r.json()["error_message"] == errors.INVALID_IMAGE
@@ -96,8 +97,8 @@ def test_no_face_detected(client, jpeg_bytes, monkeypatch):
     monkeypatch.setattr(compare, "represent", raise_no_face)
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": b64, "image_base64_2": b64},
     )
     assert r.status_code == 400
     assert r.json()["error_message"] == errors.NO_FACE_DETECTED
@@ -107,8 +108,8 @@ def test_file_upload_takes_precedence_over_base64(client, jpeg_bytes, fake_embed
     # Supply both file and a bogus base64; file precedence means success.
     fake_embeddings(np.ones(512), np.ones(512))
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": "garbage", "image_base64_2": "garbage"},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": "garbage", "image_base64_2": "garbage"},
         files={
             "image_file1": ("a.jpg", jpeg_bytes, "image/jpeg"),
             "image_file2": ("b.jpg", jpeg_bytes, "image/jpeg"),
@@ -128,8 +129,8 @@ def test_no_identity_param_accepted(client, jpeg_bytes, fake_embeddings):
     fake_embeddings(np.ones(512), np.ones(512))
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64, "employee_id": "E123"},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": b64, "image_base64_2": b64, "employee_id": "E123"},
     )
     assert r.status_code == 200
     assert "employee_id" not in r.json()
@@ -151,8 +152,8 @@ def test_concurrency_limit_exceeded_returns_busy(client, jpeg_bytes, fake_embedd
     try:
         b64 = base64.b64encode(jpeg_bytes).decode()
         r = client.post(
-            "/facepp/v3/compare",
-            data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+            "/facepp/v3/compare" + _auth(),
+            data={"image_base64_1": b64, "image_base64_2": b64},
         )
         assert r.status_code == 403
         assert r.json()["error_message"] == errors.CONCURRENCY_LIMIT_EXCEEDED
@@ -165,8 +166,8 @@ def test_inflight_counter_resets_after_request(client, jpeg_bytes, fake_embeddin
     fake_embeddings(np.ones(512), np.ones(512))
     b64 = base64.b64encode(jpeg_bytes).decode()
     r = client.post(
-        "/facepp/v3/compare",
-        data={**_auth(), "image_base64_1": b64, "image_base64_2": b64},
+        "/facepp/v3/compare" + _auth(),
+        data={"image_base64_1": b64, "image_base64_2": b64},
     )
     assert r.status_code == 200
     assert app.state.inflight == 0

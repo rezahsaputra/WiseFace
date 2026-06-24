@@ -106,10 +106,10 @@ def call_compare(img1: bytes, img2: bytes) -> tuple[dict | None, dict | None]:
         "image_file1": ("image1.jpg", img1, "image/jpeg"),
         "image_file2": ("image2.jpg", img2, "image/jpeg"),
     }
-    data = {"api_key": API_KEY, "api_secret": API_SECRET}
+    params = {"api_key": API_KEY, "api_secret": API_SECRET}
     try:
         resp = requests.post(
-            API_URL, data=data, files=files,
+            API_URL, params=params, files=files,
             timeout=REQUEST_TIMEOUT, verify=VERIFY_TLS,
         )
     except requests.RequestException as exc:

@@ -61,12 +61,14 @@ async def one(client: httpx.AsyncClient, sem: asyncio.Semaphore,
         "image_file1": ("a.jpg", B1, "image/jpeg"),
         "image_file2": ("b.jpg", B2, "image/jpeg"),
     }
-    data = {"api_key": KEY, "api_secret": SECRET}
-    headers = {} if KEEPALIVE else {"Connection": "close"}
+    params = {"api_key": KEY, "api_secret": SECRET}
+    headers = {"ngrok-skip-browser-warning": "true"}
+    if not KEEPALIVE:
+        headers["Connection"] = "close"
     async with sem:
         t0 = time.perf_counter()
         try:
-            r = await client.post(URL, data=data, files=files, headers=headers)
+            r = await client.post(URL, params=params, files=files, headers=headers)
             dt = time.perf_counter() - t0
             latencies.append(dt)
             if r.status_code == 200:

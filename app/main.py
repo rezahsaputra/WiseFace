@@ -70,10 +70,13 @@ app = FastAPI(
 # Request parsing                                                             #
 # --------------------------------------------------------------------------- #
 async def _parse_request(request: Request) -> tuple[str, str, ImageSlot, ImageSlot]:
-    """Pull Face++ parameters from form-data (or query) into typed inputs.
+    """Pull Face++ parameters from the request into typed inputs.
 
-    Fields may arrive as multipart/form-data (with file uploads),
-    application/x-www-form-urlencoded, or query string — Face++ tolerates all.
+    Credentials follow the Face++ convention — passed as query parameters:
+      ?api_key=...&api_secret=...
+
+    Image fields arrive as multipart/form-data (file uploads),
+    application/x-www-form-urlencoded, or also query string.
     """
     query = request.query_params
     form = {}
@@ -88,7 +91,7 @@ async def _parse_request(request: Request) -> tuple[str, str, ImageSlot, ImageSl
                 form[key] = value
 
     def get(name: str) -> Optional[str]:
-        return form.get(name) or query.get(name)
+        return query.get(name) or form.get(name)
 
     api_key = get("api_key") or ""
     api_secret = get("api_secret") or ""

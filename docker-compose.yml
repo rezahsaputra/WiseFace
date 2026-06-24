@@ -1,6 +1,6 @@
-# Single-host deployment (PRD §5). RAM is the binding constraint, so every
-# container has an explicit mem_limit (PRD §9.4) to stop one container from
-# crowding Windows/WSL2 off RAM. Pin image versions — no `latest` (PRD §9.7).
+# Single-host deployment — Xeon Silver 4214R, 24 vCPU, 128 GB RAM, Ubuntu 24.04.
+# mem_limit keeps each container from starving the others; total allocation ~30 GB,
+# leaving 98 GB free for OS and future services.
 
 services:
   api:
@@ -12,24 +12,24 @@ services:
     env_file:
       - .env
     environment:
-      GUNICORN_WORKERS: "10"
+      # 20 workers on 24 vCPU — reserves 4 cores for OS/nginx/monitoring.
+      # Each worker holds one Facenet512 model (~800 MB). 20 × 800 MB ≈ 16 GB.
+      GUNICORN_WORKERS: "20"
       PROMETHEUS_MULTIPROC_DIR: "/tmp/prometheus_multiproc"
-      # Burst hardening (see app/config.py). One compare at a time per worker —
-      # the OpenCV detector is not thread-safe. Backpressure is handled GLOBALLY
-      # by nginx (limit_conn), which is fair across workers; the app's per-worker
-      # shed stays disabled (0) as a backstop only. Downscale large inputs before
-      # detection to cut per-compare CPU.
+      # One inference at a time per worker — closes the OpenCV thread-safety race.
+      # Parallelism comes from the worker count, not from threading within a worker.
       INFERENCE_CONCURRENCY: "1"
       MAX_CONCURRENT_REQUESTS: "0"
       MAX_IMAGE_DIM: "1024"
     volumes:
-      # Cache model weights so they aren't re-downloaded on restart (PRD §9.7).
       - deepface_weights:/home/app/.deepface
-    # ~7 GB cap for the 10-worker API container (PRD §5 / §9.4).
-    mem_limit: 7g
-    mem_reservation: 5g
+    # 20 workers × ~800 MB + headroom = 25 GB cap.
+    mem_limit: 25g
+    mem_reservation: 18g
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 30s
@@ -50,7 +50,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/certs:/etc/nginx/certs:ro
-    mem_limit: 128m
+    mem_limit: 256m
     networks:
       - facenet
 
@@ -64,7 +64,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    mem_limit: 512m
+    mem_limit: 1g
     expose:
       - "9090"
     networks:
@@ -104,17 +104,14 @@ services:
     depends_on:
       - api
     environment:
-      # Hit the API directly on the internal network (no TLS) for a simple demo.
       API_URL: "http://api:8000/facepp/v3/compare"
-      API_KEY: "attendance-key"
-      API_SECRET: "attendance-secret"
+      API_KEY: "REZAcSlN39Ca85vmKD2oT6uCfhR6LCa61Pjz"
+      API_SECRET: "REZA0CU3CTl71Xif8NvWR96WSeBK6MhMBcCK"
       SAMPLE_DIR: "/app/samples"
       SAMPLE_A: "face1.jpg"
       SAMPLE_B: "face2.jpg"
     volumes:
-      # Mount the bundled test faces so the "Gunakan contoh wajah" option works.
       - ./testdata:/app/samples:ro
-      # Mount the docs folder so the burst-test report page can read the HTML.
       - ./docs:/app/report:ro
     ports:
       - "8501:8501"

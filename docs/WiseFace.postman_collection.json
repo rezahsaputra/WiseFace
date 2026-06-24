@@ -1,0 +1,273 @@
+{
+  "info": {
+    "name": "WiseFace Face Compare API",
+    "_postman_id": "wiseface-v1",
+    "description": "Self-hosted Face++-compatible compare service.\n\n**Setup:**\n1. Set `base_url` in the **Variables** tab (e.g. `http://localhost:8000`).\n2. Set `api_key` and `api_secret` in the **Variables** tab.\n\nCredentials are passed as **query parameters**, identical to the Face++ convention:\n`POST /facepp/v3/compare?api_key=...&api_secret=...`\n\nAndroid / existing Face++ clients require zero changes beyond swapping the base URL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "description": "Base URL. Use http://localhost:8000 for direct, http://localhost:80 for nginx."
+    },
+    {
+      "key": "api_key",
+      "value": "REZAcSlN39Ca85vmKD2oT6uCfhR6LCa61Pjz",
+      "description": "API key — passed as ?api_key= query parameter."
+    },
+    {
+      "key": "api_secret",
+      "value": "REZA0CU3CTl71Xif8NvWR96WSeBK6MhMBcCK",
+      "description": "API secret — passed as ?api_secret= query parameter."
+    }
+  ],
+  "item": [
+    {
+      "name": "Compare",
+      "description": "Face comparison requests. Credentials go in the query string; images go in the body.",
+      "item": [
+        {
+          "name": "Compare via File Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/facepp/v3/compare?api_key={{api_key}}&api_secret={{api_secret}}",
+              "host": ["{{base_url}}"],
+              "path": ["facepp", "v3", "compare"],
+              "query": [
+                {
+                  "key": "api_key",
+                  "value": "{{api_key}}",
+                  "description": "Your API key"
+                },
+                {
+                  "key": "api_secret",
+                  "value": "{{api_secret}}",
+                  "description": "Your API secret"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image_file1",
+                  "type": "file",
+                  "src": [],
+                  "description": "First face image (JPG / PNG). Click 'Select Files'."
+                },
+                {
+                  "key": "image_file2",
+                  "type": "file",
+                  "src": [],
+                  "description": "Second face image (JPG / PNG). Click 'Select Files'."
+                }
+              ]
+            },
+            "description": "Upload two image files and compare them.\n\n**How to use:**\n1. Click `image_file1` → Select Files → pick your first photo.\n2. Click `image_file2` → Select Files → pick your second photo.\n3. Send.\n\n**Response fields:**\n- `confidence` — similarity score 0–100\n- `thresholds` — pass/fail cut-offs (1e-3 / 1e-4 / 1e-5)\n- `request_id` — unique ID\n- `time_used` — processing time in ms"
+          },
+          "response": [
+            {
+              "name": "200 OK — Match",
+              "status": "OK",
+              "code": 200,
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"confidence\": 84.213,\n  \"thresholds\": {\n    \"1e-3\": 62.327,\n    \"1e-4\": 69.101,\n    \"1e-5\": 73.975\n  },\n  \"request_id\": \"1719196800000-a1b2c3d4\",\n  \"time_used\": 4821\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "401 Unauthorized — Wrong credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error_message\": \"AUTHENTICATION_ERROR\",\n  \"request_id\": \"1719196800000-x9y8z7w6\",\n  \"time_used\": 1\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "400 Bad Request — No face detected",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\n  \"error_message\": \"FACE_NOT_FOUND\",\n  \"request_id\": \"1719196800000-m3n4o5p6\",\n  \"time_used\": 312\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Compare via URL",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/facepp/v3/compare?api_key={{api_key}}&api_secret={{api_secret}}",
+              "host": ["{{base_url}}"],
+              "path": ["facepp", "v3", "compare"],
+              "query": [
+                {"key": "api_key", "value": "{{api_key}}"},
+                {"key": "api_secret", "value": "{{api_secret}}"}
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image_url1",
+                  "value": "https://example.com/face1.jpg",
+                  "type": "text",
+                  "description": "Public URL of the first image."
+                },
+                {
+                  "key": "image_url2",
+                  "value": "https://example.com/face2.jpg",
+                  "type": "text",
+                  "description": "Public URL of the second image."
+                }
+              ]
+            },
+            "description": "Compare two images by URL. The server fetches both URLs — they must be reachable from the server."
+          },
+          "response": []
+        },
+        {
+          "name": "Compare via Base64",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/facepp/v3/compare?api_key={{api_key}}&api_secret={{api_secret}}",
+              "host": ["{{base_url}}"],
+              "path": ["facepp", "v3", "compare"],
+              "query": [
+                {"key": "api_key", "value": "{{api_key}}"},
+                {"key": "api_secret", "value": "{{api_secret}}"}
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image_base64_1",
+                  "value": "<paste base64 string here>",
+                  "type": "text",
+                  "description": "Base64-encoded image. Accepts raw base64 or data URI (data:image/jpeg;base64,...)"
+                },
+                {
+                  "key": "image_base64_2",
+                  "value": "<paste base64 string here>",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Compare two images as base64 strings."
+          },
+          "response": []
+        },
+        {
+          "name": "Compare — Mixed (File + URL)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/facepp/v3/compare?api_key={{api_key}}&api_secret={{api_secret}}",
+              "host": ["{{base_url}}"],
+              "path": ["facepp", "v3", "compare"],
+              "query": [
+                {"key": "api_key", "value": "{{api_key}}"},
+                {"key": "api_secret", "value": "{{api_secret}}"}
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image_file1",
+                  "type": "file",
+                  "src": [],
+                  "description": "Live/captured photo — upload as file."
+                },
+                {
+                  "key": "image_url2",
+                  "value": "https://example.com/employee-reference.jpg",
+                  "type": "text",
+                  "description": "Stored employee reference photo — URL."
+                }
+              ]
+            },
+            "description": "Slot 1 = file (live capture), Slot 2 = URL (stored reference). Slots can use different input methods.\n\nPrecedence per slot: `image_file` > `image_base64` > `image_url`"
+          },
+          "response": []
+        },
+        {
+          "name": "Compare — Wrong Credentials (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/facepp/v3/compare?api_key=wrong-key&api_secret=wrong-secret",
+              "host": ["{{base_url}}"],
+              "path": ["facepp", "v3", "compare"],
+              "query": [
+                {"key": "api_key", "value": "wrong-key"},
+                {"key": "api_secret", "value": "wrong-secret"}
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "image_url1", "value": "https://example.com/face1.jpg", "type": "text"},
+                {"key": "image_url2", "value": "https://example.com/face2.jpg", "type": "text"}
+              ]
+            },
+            "description": "Verify that wrong credentials return 401 AUTHENTICATION_ERROR immediately."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health & Monitoring",
+      "description": "Liveness and metrics endpoints. No auth required.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Returns 200 OK when the service is up and ready."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": "{\"status\": \"ok\"}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"]
+            },
+            "description": "Raw Prometheus metrics.\n- `facecompare_requests_total`\n- `facecompare_latency_seconds`\n- `facecompare_confidence`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
