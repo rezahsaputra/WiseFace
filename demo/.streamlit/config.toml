@@ -1,0 +1,15 @@
+# Light mode only (design rule 10), DCT web palette.
+[theme]
+base = "light"
+primaryColor = "#5ba1b5"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f5f5"
+textColor = "#212529"
+
+[server]
+headless = true
+address = "0.0.0.0"
+port = 8501
+
+[browser]
+gatherUsageStats = false

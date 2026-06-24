@@ -91,6 +91,37 @@ services:
     networks:
       - facenet
 
+  # Stakeholder demo UI (Streamlit). Opt-in: not started by default.
+  #   docker compose --profile demo up -d api demo
+  # then open http://localhost:8501
+  demo:
+    build:
+      context: ./demo
+      dockerfile: Dockerfile
+    image: face-compare-demo:1.0.0
+    profiles: ["demo"]
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Hit the API directly on the internal network (no TLS) for a simple demo.
+      API_URL: "http://api:8000/facepp/v3/compare"
+      API_KEY: "attendance-key"
+      API_SECRET: "attendance-secret"
+      SAMPLE_DIR: "/app/samples"
+      SAMPLE_A: "face1.jpg"
+      SAMPLE_B: "face2.jpg"
+    volumes:
+      # Mount the bundled test faces so the "Gunakan contoh wajah" option works.
+      - ./testdata:/app/samples:ro
+      # Mount the docs folder so the burst-test report page can read the HTML.
+      - ./docs:/app/report:ro
+    ports:
+      - "8501:8501"
+    mem_limit: 512m
+    networks:
+      - facenet
+
 volumes:
   deepface_weights:
   prometheus_data:

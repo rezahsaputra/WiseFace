@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WiseFace — Burst Load Test Summary</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #212529;
+      font-size: 14px;
+      padding: 32px 24px;
+    }
+
+    /* ---- Page header ---- */
+    .page-header {
+      background: #5ba1b5;
+      color: #fff;
+      padding: 20px 28px;
+      border-radius: 4px;
+      margin-bottom: 28px;
+    }
+    .page-header h1 { font-size: 20px; font-weight: 700; letter-spacing: .3px; }
+    .page-header p  { font-size: 13px; margin-top: 4px; opacity: .88; }
+
+    /* ---- Card ---- */
+    .card {
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid #dee2e6;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .card-title {
+      background: #d1d1d1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #212529;
+      padding: 8px 16px;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .card-body { padding: 20px 16px; }
+
+    /* ---- Before / After comparison table ---- */
+    table.compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.compare thead tr {
+      background: #d1d1d1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    table.compare thead th {
+      padding: 9px 12px;
+      border-right: 1px solid #dee2e6;
+      text-align: left;
+    }
+    table.compare thead th:last-child { border-right: none; }
+    table.compare tbody tr:nth-child(odd)  { background: #fff; }
+    table.compare tbody tr:nth-child(even) { background: #fafafa; }
+    table.compare tbody tr:hover { background: #f0f7fa; }
+    table.compare tbody td {
+      padding: 9px 12px;
+      border-right: 1px solid #dee2e6;
+      vertical-align: middle;
+    }
+    table.compare tbody td:last-child { border-right: none; }
+
+    /* ---- Status badges ---- */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .badge-success  { background: #d1eddc; border-color: #28a745; color: #155724; }
+    .badge-danger   { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .badge-warning  { background: #fff3cd; border-color: #ffc107; color: #856404; }
+    .badge-info     { background: #cce5ff; border-color: #007bff; color: #004085; }
+
+    /* ---- Metric grid ---- */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .metric-box {
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+    .metric-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #6c757d;
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #212529;
+      line-height: 1;
+    }
+    .metric-value.green { color: #28a745; }
+    .metric-value.red   { color: #dc3545; }
+    .metric-sub {
+      font-size: 11px;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+
+    /* ---- Timeline / scenario list ---- */
+    .scenario-list { list-style: none; }
+    .scenario-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .scenario-list li:last-child { border-bottom: none; padding-bottom: 0; }
+    .scenario-num {
+      min-width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #5ba1b5;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .scenario-content {}
+    .scenario-title { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+    .scenario-desc  { font-size: 12px; color: #495057; line-height: 1.5; }
+
+    /* ---- Architecture flow ---- */
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      padding: 4px 0;
+    }
+    .arch-node {
+      background: #fff;
+      border: 1px solid #5ba1b5;
+      border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #212529;
+      text-align: center;
+    }
+    .arch-arrow {
+      color: #adb5bd;
+      font-size: 18px;
+      padding: 0 6px;
+      line-height: 1;
+    }
+    .arch-note {
+      font-size: 11px;
+      color: #6c757d;
+      text-align: center;
+      margin-top: 3px;
+    }
+    .arch-col { display: flex; flex-direction: column; align-items: center; }
+
+    /* ---- Footer ---- */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #adb5bd;
+      margin-top: 16px;
+    }
+
+    /* ---- Two-col layout ---- */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ---- Section gap ---- */
+    .gap { margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <h1>WiseFace — Burst Load Test Summary</h1>
+    <p>Hasil uji ketahanan layanan perbandingan wajah terhadap lonjakan clock-in / clock-out massal</p>
+  </div>
+
+  <!-- Key metrics -->
+  <div class="card">
+    <div class="card-title">Hasil Utama (Setelah Perbaikan)</div>
+    <div class="card-body">
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-label">Success Rate</div>
+          <div class="metric-value green">100%</div>
+          <div class="metric-sub">1.000 / 1.000 requests</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">HTTP 500 / Crash</div>
+          <div class="metric-value green">0</div>
+          <div class="metric-sub">sebelumnya: 8 crash</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Throughput</div>
+          <div class="metric-value">~2 req/s</div>
+          <div class="metric-sub">hardware ceiling (CPU-bound)</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Waktu Terlama (p99)</div>
+          <div class="metric-value">18 detik</div>
+          <div class="metric-sub">batas timeout: 30 detik</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Memory Peak</div>
+          <div class="metric-value">6,6 GB</div>
+          <div class="metric-sub">limit kontainer: 7 GB</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Overload (503)</div>
+          <div class="metric-value green">Fast &amp; Retryable</div>
+          <div class="metric-sub">tidak ada crash / timeout</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Before / After table -->
+  <div class="card">
+    <div class="card-title">Perbandingan Sebelum vs Sesudah Perbaikan</div>
+    <div class="card-body" style="padding: 0;">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th style="width:32%">Dimensi</th>
+            <th style="width:34%">Sebelum Perbaikan</th>
+            <th style="width:34%">Sesudah Perbaikan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Thread-safety detektor</strong></td>
+            <td>
+              <span class="badge badge-danger">CRASH</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">8 dari 1.000 request HTTP 500</span>
+            </td>
+            <td>
+              <span class="badge badge-success">AMAN</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">0 crash, anyio CapacityLimiter(1)</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Ukuran image Docker</strong></td>
+            <td>
+              <span class="badge badge-warning">3,82 GB</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">tensorflow GPU penuh</span>
+            </td>
+            <td>
+              <span class="badge badge-success">2,75 GB</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">diganti tensorflow-cpu</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Backpressure (overload)</strong></td>
+            <td>
+              <span class="badge badge-danger">TIDAK ADIL</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">per-worker cap: ~55–98% ditolak</span>
+            </td>
+            <td>
+              <span class="badge badge-success">FAIR</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">nginx limit_conn global; 503 cepat</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Input downscaling</strong></td>
+            <td>
+              <span class="badge badge-warning">TIDAK ADA</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">gambar besar memakan CPU lebih</span>
+            </td>
+            <td>
+              <span class="badge badge-success">AKTIF</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">maks 1.024px sebelum deteksi</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Graceful degradation</strong></td>
+            <td>
+              <span class="badge badge-danger">TIDAK</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">queue menumpuk hingga timeout</span>
+            </td>
+            <td>
+              <span class="badge badge-success">YA</span>
+              <span style="margin-left:8px; font-size:12px; color:#495057;">overload = 503 retryable, bukan timeout</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Test scenarios -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Skenario Uji yang Dijalankan</div>
+      <div class="card-body">
+        <ul class="scenario-list">
+          <li>
+            <div class="scenario-num">1</div>
+            <div class="scenario-content">
+              <div class="scenario-title">Baseline Burst (Sebelum Perbaikan)</div>
+              <div class="scenario-desc">1.000 request, 20 bersamaan — 8 crash HTTP 500 dari bug thread-safety OpenCV. Queue mendekati batas timeout.</div>
+            </div>
+          </li>
+          <li>
+            <div class="scenario-num">2</div>
+            <div class="scenario-content">
+              <div class="scenario-title">Full Burst — Sesudah Perbaikan</div>
+              <div class="scenario-desc">1.000 request, 20 bersamaan — <strong>1.000/1.000 sukses, 0 crash</strong>. Gelombang selesai &lt;9 menit, maks tunggu 18 dtk.</div>
+            </div>
+          </li>
+          <li>
+            <div class="scenario-num">3</div>
+            <div class="scenario-content">
+              <div class="scenario-title">Produksi Normal — Via Nginx</div>
+              <div class="scenario-desc">300 request, 20 bersamaan — <strong>300/300 (100%)</strong>. Tidak ada penolakan palsu.</div>
+            </div>
+          </li>
+          <li>
+            <div class="scenario-num">4</div>
+            <div class="scenario-content">
+              <div class="scenario-title">Overload Ekstrem — Via Nginx</div>
+              <div class="scenario-desc">400 request, 80 bersamaan (2x kapasitas) — request yang diterima sukses; sisanya <strong>503 cepat</strong> (304 ditolak). Nol crash, nol timeout.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Arsitektur Alur Request</div>
+      <div class="card-body">
+        <div class="arch-flow" style="margin-bottom:16px;">
+          <div class="arch-col">
+            <div class="arch-node">Client<br/><span style="font-weight:400;font-size:11px;">Absensi App</span></div>
+          </div>
+          <div class="arch-arrow">&#8594;</div>
+          <div class="arch-col">
+            <div class="arch-node">Nginx<br/><span style="font-weight:400;font-size:11px;">TLS + limit_conn</span></div>
+            <div class="arch-note" style="color:#856404;">Backpressure<br/>global &amp; adil</div>
+          </div>
+          <div class="arch-arrow">&#8594;</div>
+          <div class="arch-col">
+            <div class="arch-node">API Workers<br/><span style="font-weight:400;font-size:11px;">10 Gunicorn</span></div>
+            <div class="arch-note" style="color:#155724;">CapacityLimiter(1)<br/>per worker</div>
+          </div>
+          <div class="arch-arrow">&#8594;</div>
+          <div class="arch-col">
+            <div class="arch-node">Facenet512<br/><span style="font-weight:400;font-size:11px;">Inferensi CPU</span></div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#495057; line-height:1.6;">
+          <strong>Nginx</strong> membatasi koneksi secara global (adil antar worker). <br/>
+          <strong>CapacityLimiter</strong> memastikan detektor OpenCV tidak diakses bersamaan dalam satu worker. <br/>
+          <strong>Overload</strong> menghasilkan 503 retryable — bukan hang atau crash. <br/>
+          <strong>Throughput</strong> ~2 req/dtk adalah batas hardware (CPU Facenet512 &asymp;5 core-detik/pasang).
+        </div>
+
+        <div style="margin-top:16px; padding:12px; background:#f5f5f5; border-radius:4px; border-left: 3px solid #5ba1b5;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6c757d; margin-bottom:4px;">Estimasi Waktu Layanan</div>
+          <div style="font-size:13px; color:#212529;">
+            Window clock-in <strong>10 menit</strong> dengan 1.000 karyawan =
+            rata-rata <strong>1,7 req/dtk</strong> &mdash; tepat di bawah batas ~2 req/dtk.
+            Gelombang selesai dalam durasi window itu sendiri.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="card">
+    <div class="card-title">Kesimpulan untuk Stakeholder</div>
+    <div class="card-body">
+      <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:220px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6c757d; margin-bottom:6px;">Keandalan</div>
+          <div style="font-size:14px; line-height:1.6; color:#212529;">
+            Layanan <strong>tidak crash</strong> saat lonjakan. Semua request diproses atau ditolak dengan respons jelas (503 retryable) — tidak ada yang hilang secara diam-diam.
+          </div>
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6c757d; margin-bottom:6px;">Kapasitas</div>
+          <div style="font-size:14px; line-height:1.6; color:#212529;">
+            1.000 karyawan dalam window 10 menit dapat dilayani dengan satu host. Untuk lebih cepat, cukup tambah compute — arsitektur sudah siap.
+          </div>
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6c757d; margin-bottom:6px;">Risiko Tersisa</div>
+          <div style="font-size:14px; line-height:1.6; color:#212529;">
+            Batas throughput adalah hardware (CPU), bukan desain perangkat lunak. Skor confidence masih dalam kalibrasi (Milestone 0) — akurasi ambang batas akan dikonfirmasi di Milestone 1.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    WiseFace Self-Hosted Face Recognition &mdash; Burst Test Report &mdash; 24 Jun 2026
+  </div>
+
+</body>
+</html>
