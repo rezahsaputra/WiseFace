@@ -211,6 +211,7 @@
               <th class="border-r border-[#dee2e6] px-3 py-2 text-left w-20">Aksi</th>
               <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Label</th>
               <th class="border-r border-[#dee2e6] px-3 py-2 text-left">API Key</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">API Secret</th>
               <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Dibuat</th>
               <th class="px-3 py-2 text-left">Status</th>
             </tr>
@@ -225,11 +226,12 @@
                   class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
               </td>
               <td class="border-r border-[#dee2e6]"></td>
+              <td class="border-r border-[#dee2e6]"></td>
               <td></td>
             </tr>
           </thead>
           <tbody id="keys-table-body">
-            <tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
+            <tr><td colspan="6" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
           </tbody>
         </table>
       </div>
@@ -582,6 +584,42 @@ function applyKeyTableFilter() {
 // ============================================================
 // Keys tab
 // ============================================================
+const _revealedKeys    = new Set(); // key IDs with api_key revealed
+const _revealedSecrets = new Set(); // key IDs with api_secret revealed
+
+const _iconEye = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+    d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+</svg>`;
+const _iconEyeOff = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+</svg>`;
+const _iconCopy = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+</svg>`;
+
+function togglePeekKey(id)    { _revealedKeys.has(id)    ? _revealedKeys.delete(id)    : _revealedKeys.add(id);    applyKeysTableFilter(); }
+function togglePeekSecret(id) { _revealedSecrets.has(id) ? _revealedSecrets.delete(id) : _revealedSecrets.add(id); applyKeysTableFilter(); }
+
+function _peekCell(id, fullValue, revealedSet, toggleFn) {
+  const revealed  = revealedSet.has(id);
+  const display   = revealed ? esc(fullValue) : esc((fullValue||'').slice(0,8) + '...' + (fullValue||'').slice(-4));
+  const eyeBtn    = `<button onclick="${toggleFn}(${id})" title="${revealed ? 'Sembunyikan' : 'Tampilkan'}"
+    class="bg-[#6c757d] hover:bg-[#5a6268] text-white text-[10px] px-1.5 py-0.5 rounded cursor-pointer flex items-center">
+    ${revealed ? _iconEyeOff : _iconEye}
+  </button>`;
+  const copyBtn   = `<button onclick="copyText('${esc(fullValue)}', this)"
+    class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-pointer flex items-center gap-1">
+    ${_iconCopy} Salin
+  </button>`;
+  return `<div class="flex items-center gap-1.5">
+    <span class="font-mono text-[11px] min-w-[120px]">${display}</span>
+    ${eyeBtn}${copyBtn}
+  </div>`;
+}
+
 async function loadKeys() {
   try {
     const data = await api('GET', '/api/keys');
@@ -589,7 +627,7 @@ async function loadKeys() {
     applyKeysTableFilter();
   } catch (e) {
     document.getElementById('keys-table-body').innerHTML =
-      '<tr><td colspan="5" class="px-3 py-4 text-center text-[#dc3545]">Gagal memuat data.</td></tr>';
+      '<tr><td colspan="6" class="px-3 py-4 text-center text-[#dc3545]">Gagal memuat data.</td></tr>';
   }
 }
 
@@ -600,24 +638,24 @@ function applyKeysTableFilter() {
   const qk = (document.getElementById('filter-keys-key').value || '').toLowerCase();
   const rows = _keysData.filter(r => {
     const labelOk = !ql || (r.client_label || '').toLowerCase().includes(ql);
-    const keyOk = !qk || (r.api_key_masked || '').toLowerCase().includes(qk);
+    const keyOk   = !qk || (r.api_key_masked || '').toLowerCase().includes(qk);
     return labelOk && keyOk;
   });
 
   const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const tbody = document.getElementById('keys-table-body');
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada API key.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada API key.</td></tr>';
     document.getElementById('keys-table-footer').textContent = '';
     return;
   }
   tbody.innerHTML = rows.map((r, i) => {
-    const active = r.is_active === 1;
-    const badge = active
+    const active  = r.is_active === 1;
+    const badge   = active
       ? '<span class="bg-[#d1eddc] border border-[#28a745] text-[#155724] text-[10px] font-semibold px-2 py-0.5 rounded">Aktif</span>'
       : '<span class="bg-[#f8d7da] border border-[#dc3545] text-[#721c24] text-[10px] font-semibold px-2 py-0.5 rounded">Dicabut</span>';
-    const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
-    const dt = r.created_at ? new Date(r.created_at) : null;
+    const rowBg   = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
+    const dt      = r.created_at ? new Date(r.created_at) : null;
     const dateStr = dt
       ? `${String(dt.getDate()).padStart(2,'0')} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`
       : '—';
@@ -634,18 +672,11 @@ function applyKeysTableFilter() {
     return `<tr class="${rowBg} hover:bg-[#f0f7fa]">
       <td class="border-r border-[#dee2e6] px-3 py-[7px]">${revokeBtn}</td>
       <td class="border-r border-[#dee2e6] px-3 py-[7px]">${esc(r.client_label || '—')}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px] font-mono">
-        <div class="flex items-center gap-2">
-          <span>${esc(r.api_key_masked)}</span>
-          <button onclick="copyText('${esc(r.api_key_full)}', this)"
-            class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-pointer flex items-center gap-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
-            Salin
-          </button>
-        </div>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px]">
+        ${_peekCell(r.id, r.api_key_full, _revealedKeys, 'togglePeekKey')}
+      </td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px]">
+        ${_peekCell(r.id, r.api_secret, _revealedSecrets, 'togglePeekSecret')}
       </td>
       <td class="border-r border-[#dee2e6] px-3 py-[7px]">${dateStr}</td>
       <td class="px-3 py-[7px]">${badge}</td>
