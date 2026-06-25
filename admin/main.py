@@ -201,7 +201,7 @@ _CHARS = string.ascii_letters + string.digits
 
 
 def _gen(n: int = 32) -> str:
-    return "".join(secrets.choice(_CHARS) for _ in range(n))
+    return "REZA" + "".join(secrets.choice(_CHARS) for _ in range(n))
 
 
 @app.post("/api/keys", status_code=201)
