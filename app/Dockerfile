@@ -64,8 +64,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY . /app/app
 # Make the package importable as `app` (WORKDIR/app/app/__init__.py).
-RUN mkdir -p "$PROMETHEUS_MULTIPROC_DIR" "$DEEPFACE_HOME" \
-    && chown -R app:app /app "$PROMETHEUS_MULTIPROC_DIR" "$DEEPFACE_HOME"
+RUN mkdir -p "$PROMETHEUS_MULTIPROC_DIR" "$DEEPFACE_HOME" /data \
+    && chown -R app:app /app "$PROMETHEUS_MULTIPROC_DIR" "$DEEPFACE_HOME" /data
 
 USER app
 
