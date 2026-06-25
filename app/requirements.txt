@@ -20,4 +20,7 @@ prometheus-client==0.21.1
 pydantic==2.10.4
 pydantic-settings==2.7.1
 
+# Persistence (shared SQLite DB with admin service)
+aiosqlite==0.20.0
+
 # Test-only deps live in requirements-dev.txt

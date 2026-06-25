@@ -24,9 +24,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from . import errors, metrics
+from . import db, errors, metrics
 from .compare import run_comparison, thresholds
-from .config import Credential, get_settings
+from .config import get_settings
 from .face_engine import warmup
 from .image_loader import ImageSlot
 
@@ -41,7 +41,12 @@ async def lifespan(app: FastAPI):
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
     app.state.settings = settings
-    app.state.credentials = settings.load_credentials()
+    await db.init_db()
+    if not await db.count_active_keys():
+        raise RuntimeError(
+            "No active API keys found. Set API_CREDENTIALS env var (inline JSON) "
+            "or add keys via the admin panel."
+        )
     # Serialize inference within this worker. The default of 1 closes the
     # OpenCV CascadeClassifier thread-safety race (cv2 getScaleData crash) that
     # surfaces under burst, since starlette's default threadpool would otherwise
@@ -113,12 +118,12 @@ async def _parse_request(request: Request) -> tuple[str, str, ImageSlot, ImageSl
     return api_key, api_secret, slot1, slot2
 
 
-def _authenticate(request: Request, api_key: str, api_secret: str) -> Credential:
-    creds: dict[str, Credential] = request.app.state.credentials
-    cred = creds.get(api_key)
-    if cred is None or cred.api_secret != api_secret:
+async def _authenticate(api_key: str, api_secret: str) -> str:
+    """Return client_label or raise auth_error."""
+    label = await db.authenticate(api_key, api_secret)
+    if label is None:
         raise errors.auth_error()
-    return cred
+    return label
 
 
 def _error_response(err: errors.CompareError, request_id: str, started: float) -> JSONResponse:
@@ -142,6 +147,10 @@ async def _compare(request: Request, endpoint: str) -> Response:
     state = request.app.state
     settings = state.settings
     client_label = "unknown"
+    api_key = ""
+    _status_code = 500
+    _confidence: Optional[float] = None
+    _error_msg: Optional[str] = None
 
     # Shed load fast if this worker is already saturated, so a burst degrades to
     # retryable rejections instead of requests queueing past the 30s timeout.
@@ -149,13 +158,21 @@ async def _compare(request: Request, endpoint: str) -> Response:
         metrics.REQUESTS.labels(
             client_label, endpoint, errors.CONCURRENCY_LIMIT_EXCEEDED
         ).inc()
-        return _error_response(errors.concurrency_limit_error(), request_id, started)
+        resp = _error_response(errors.concurrency_limit_error(), request_id, started)
+        try:
+            await db.log_request(
+                "", 403,
+                (time.perf_counter() - started) * 1000,
+                None, errors.CONCURRENCY_LIMIT_EXCEEDED,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return resp
 
     state.inflight += 1
     try:
         api_key, api_secret, slot1, slot2 = await _parse_request(request)
-        cred = _authenticate(request, api_key, api_secret)
-        client_label = cred.client
+        client_label = await _authenticate(api_key, api_secret)
 
         # Offload the blocking CPU-bound pipeline off the event loop, capped by
         # the inference limiter so a worker runs one compare at a time (default).
@@ -164,6 +181,8 @@ async def _compare(request: Request, endpoint: str) -> Response:
         )
 
         time_used = int((time.perf_counter() - started) * 1000)
+        _status_code = 200
+        _confidence = confidence
         metrics.REQUESTS.labels(client_label, endpoint, "success").inc()
         metrics.LATENCY.labels(endpoint).observe(time.perf_counter() - started)
         metrics.CONFIDENCE.labels(client_label).observe(confidence)
@@ -177,11 +196,15 @@ async def _compare(request: Request, endpoint: str) -> Response:
         )
 
     except errors.CompareError as err:
+        _status_code = err.http_status
+        _error_msg = err.error_message
         metrics.REQUESTS.labels(client_label, endpoint, err.error_message).inc()
         metrics.LATENCY.labels(endpoint).observe(time.perf_counter() - started)
         return _error_response(err, request_id, started)
 
     except Exception:  # noqa: BLE001 - last-resort guard, must not leak details
+        _status_code = 500
+        _error_msg = errors.INTERNAL_ERROR
         logger.exception("Unhandled error in compare (request_id=%s)", request_id)
         metrics.REQUESTS.labels(client_label, endpoint, errors.INTERNAL_ERROR).inc()
         metrics.LATENCY.labels(endpoint).observe(time.perf_counter() - started)
@@ -193,6 +216,14 @@ async def _compare(request: Request, endpoint: str) -> Response:
 
     finally:
         state.inflight -= 1
+        try:
+            await db.log_request(
+                api_key, _status_code,
+                (time.perf_counter() - started) * 1000,
+                _confidence, _error_msg,
+            )
+        except Exception:  # noqa: BLE001
+            logger.debug("Failed to write request log to DB", exc_info=True)
 
 
 @app.post("/facepp/v3/compare")

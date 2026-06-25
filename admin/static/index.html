@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WiseFace Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .tab-active { border-bottom: 2px solid #5ba1b5; color: #5ba1b5; font-weight: 600; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #6c757d; }
+    .tab-inactive:hover { color: #212529; }
+    input:focus, select:focus { outline: 2px solid #5ba1b5; outline-offset: 1px; }
+    .modal-overlay { background: rgba(0,0,0,0.4); }
+  </style>
+</head>
+<body class="bg-[#f5f5f5] text-[#212529] text-sm">
+
+<!-- ================================================================ LOGIN ================================================================ -->
+<div id="login-page" class="min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded shadow-md w-80 p-8">
+    <div class="flex items-center gap-2 mb-6">
+      <svg class="w-7 h-7 text-[#5ba1b5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <span class="text-lg font-bold text-[#5ba1b5]">WiseFace Admin</span>
+    </div>
+    <div class="mb-4">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Username</label>
+      <input id="login-user" type="text" value="admin" autocomplete="username"
+        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm" />
+    </div>
+    <div class="mb-6">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Password</label>
+      <input id="login-pass" type="password" autocomplete="current-password"
+        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm"
+        onkeydown="if(event.key==='Enter') doLogin()" />
+    </div>
+    <p id="login-err" class="text-[#dc3545] text-xs mb-3 hidden"></p>
+    <button onclick="doLogin()"
+      class="w-full bg-[#5ba1b5] hover:bg-[#4a90a4] text-white font-semibold py-2 rounded text-sm cursor-pointer flex items-center justify-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+      </svg>
+      Masuk
+    </button>
+  </div>
+</div>
+
+<!-- ================================================================ APP ================================================================ -->
+<div id="app" class="hidden min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-[#5ba1b5] text-white px-6 py-3 flex items-center justify-between shadow">
+    <div class="flex items-center gap-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <span class="font-bold text-base">WiseFace Admin</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="header-user" class="text-sm text-white/80"></span>
+      <button onclick="doLogout()"
+        class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Keluar
+      </button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="bg-white border-b border-[#dee2e6] px-6 flex gap-6">
+    <button id="tab-usage" onclick="switchTab('usage')"
+      class="tab-active py-3 text-sm cursor-pointer flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      Penggunaan
+    </button>
+    <button id="tab-keys" onclick="switchTab('keys')"
+      class="tab-inactive py-3 text-sm cursor-pointer flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+      </svg>
+      API Keys
+    </button>
+  </div>
+
+  <!-- ========================== USAGE TAB ========================== -->
+  <div id="content-usage" class="flex-1 p-6">
+
+    <!-- Time window filter -->
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mr-1">Periode:</span>
+      <button onclick="setWindow('hour')" id="btn-hour"
+        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-[#5ba1b5] text-white">
+        1 Jam Terakhir
+      </button>
+      <button onclick="setWindow('day')" id="btn-day"
+        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
+        24 Jam Terakhir
+      </button>
+      <button onclick="setWindow('month')" id="btn-month"
+        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
+        30 Hari Terakhir
+      </button>
+      <button onclick="setWindow('year')" id="btn-year"
+        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
+        1 Tahun Terakhir
+      </button>
+      <button onclick="loadUsage()" class="ml-2 bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-4 gap-4 mb-5">
+      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Total Request</div>
+        <div id="card-total" class="text-2xl font-bold text-[#212529]">—</div>
+      </div>
+      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Success Rate</div>
+        <div id="card-rate" class="text-2xl font-bold text-[#28a745]">—</div>
+      </div>
+      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Rata-rata Latency</div>
+        <div id="card-latency" class="text-2xl font-bold text-[#212529]">—</div>
+        <div class="text-[11px] text-[#6c757d]">ms</div>
+      </div>
+      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Key Aktif</div>
+        <div id="card-keys" class="text-2xl font-bold text-[#212529]">—</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4 mb-5">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-3">Request per Waktu</div>
+      <div style="height:220px; position:relative;">
+        <canvas id="usage-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Per-key breakdown table -->
+    <div class="bg-white rounded shadow-sm border border-[#dee2e6]">
+      <div class="px-4 py-3 border-b border-[#dee2e6]">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d]">Penggunaan per API Key</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs whitespace-nowrap">
+          <thead>
+            <tr class="bg-[#d1d1d1] text-[#212529] text-[11px] font-bold uppercase tracking-wider">
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Label</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Total</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Sukses</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Success Rate</th>
+              <th class="px-3 py-2 text-right">Avg Latency (ms)</th>
+            </tr>
+            <tr class="bg-[#f8f9fa]">
+              <td class="border-r border-[#dee2e6] px-2 py-1">
+                <input id="filter-key-label" oninput="filterKeyTable()" placeholder="Cari label..."
+                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+              </td>
+              <td class="border-r border-[#dee2e6]"></td>
+              <td class="border-r border-[#dee2e6]"></td>
+              <td class="border-r border-[#dee2e6]"></td>
+              <td></td>
+            </tr>
+          </thead>
+          <tbody id="key-table-body">
+            <tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="key-table-footer" class="bg-[#d1d1d1] px-3 py-1.5 text-[11px] text-[#6c757d]"></div>
+    </div>
+  </div>
+
+  <!-- ========================== KEYS TAB ========================== -->
+  <div id="content-keys" class="hidden flex-1 p-6">
+    <div class="flex items-center justify-between mb-5">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d]">Daftar API Key</span>
+      <button onclick="openCreateModal()"
+        class="bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-3 py-2 rounded flex items-center gap-1.5 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Generate Key Baru
+      </button>
+    </div>
+
+    <div class="bg-white rounded shadow-sm border border-[#dee2e6]">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs whitespace-nowrap">
+          <thead>
+            <tr class="bg-[#d1d1d1] text-[#212529] text-[11px] font-bold uppercase tracking-wider">
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left w-20">Aksi</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Label</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">API Key</th>
+              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Dibuat</th>
+              <th class="px-3 py-2 text-left">Status</th>
+            </tr>
+            <tr class="bg-[#f8f9fa]">
+              <td class="border-r border-[#dee2e6] px-2 py-1"></td>
+              <td class="border-r border-[#dee2e6] px-2 py-1">
+                <input id="filter-keys-label" oninput="filterKeysTable()" placeholder="Cari label..."
+                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+              </td>
+              <td class="border-r border-[#dee2e6] px-2 py-1">
+                <input id="filter-keys-key" oninput="filterKeysTable()" placeholder="Cari key..."
+                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+              </td>
+              <td class="border-r border-[#dee2e6]"></td>
+              <td></td>
+            </tr>
+          </thead>
+          <tbody id="keys-table-body">
+            <tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="keys-table-footer" class="bg-[#d1d1d1] px-3 py-1.5 text-[11px] text-[#6c757d]"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ======================= MODAL: Create Key ======================= -->
+<div id="modal-create" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+  <div class="bg-white rounded shadow-lg w-96 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="font-bold text-sm text-[#212529]">Generate API Key Baru</span>
+      <button onclick="closeModal('modal-create')" class="text-[#6c757d] hover:text-[#212529] cursor-pointer">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="mb-4">
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Label Aplikasi</label>
+      <input id="create-label" type="text" placeholder="cth: Android Attendance App"
+        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm"
+        onkeydown="if(event.key==='Enter') doCreateKey()" />
+      <p class="text-[11px] text-[#6c757d] mt-1">Nama identifikasi untuk key ini (digunakan untuk monitoring).</p>
+    </div>
+    <p id="create-err" class="text-[#dc3545] text-xs mb-3 hidden"></p>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeModal('modal-create')"
+        class="bg-[#ffc107] text-[#212529] text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Batal
+      </button>
+      <button onclick="doCreateKey()"
+        class="bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Generate
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL: Key Created ======================= -->
+<div id="modal-created" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+  <div class="bg-white rounded shadow-lg w-[480px] p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg class="w-5 h-5 text-[#28a745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span class="font-bold text-sm text-[#212529]">API Key Berhasil Dibuat</span>
+    </div>
+    <div class="bg-[#fff3cd] border border-[#ffc107] rounded p-3 mb-4 text-xs text-[#856404]">
+      Simpan API Secret sekarang. Secret tidak akan ditampilkan lagi setelah modal ini ditutup.
+    </div>
+    <div class="mb-3">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Key</div>
+      <div class="flex items-center gap-2">
+        <code id="created-key" class="flex-1 bg-[#f8f9fa] border border-[#dee2e6] rounded px-3 py-2 text-xs font-mono break-all"></code>
+        <button onclick="copyToClipboard('created-key', this)"
+          class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-2 py-2 rounded cursor-pointer flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Salin
+        </button>
+      </div>
+    </div>
+    <div class="mb-5">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Secret</div>
+      <div class="flex items-center gap-2">
+        <code id="created-secret" class="flex-1 bg-[#f8f9fa] border border-[#dee2e6] rounded px-3 py-2 text-xs font-mono break-all"></code>
+        <button onclick="copyToClipboard('created-secret', this)"
+          class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-2 py-2 rounded cursor-pointer flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Salin
+        </button>
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button onclick="closeModal('modal-created'); loadKeys()"
+        class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Selesai
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL: Revoke Confirm ======================= -->
+<div id="modal-revoke" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+  <div class="bg-white rounded shadow-lg w-80 p-6">
+    <div class="flex items-center gap-2 mb-3">
+      <svg class="w-5 h-5 text-[#dc3545]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <span class="font-bold text-sm text-[#212529]">Cabut API Key?</span>
+    </div>
+    <p class="text-xs text-[#6c757d] mb-1">Label: <strong id="revoke-label" class="text-[#212529]"></strong></p>
+    <p class="text-xs text-[#6c757d] mb-5">Aksi ini tidak dapat dibatalkan. Semua request menggunakan key ini akan gagal dengan 401.</p>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeModal('modal-revoke')"
+        class="bg-[#ffc107] text-[#212529] text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Batal
+      </button>
+      <button id="revoke-confirm-btn"
+        class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Cabut
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let _token = localStorage.getItem('wf_admin_token') || '';
+let _username = localStorage.getItem('wf_admin_user') || '';
+let _currentWindow = 'hour';
+let _usageData = null;
+let _keysData = [];
+let _chart = null;
+
+// ============================================================
+// Auth
+// ============================================================
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  err.classList.add('hidden');
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: user, password: pass})
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      err.textContent = d.detail || 'Username atau password salah.';
+      err.classList.remove('hidden');
+      return;
+    }
+    const data = await res.json();
+    _token = data.token;
+    _username = data.username;
+    localStorage.setItem('wf_admin_token', _token);
+    localStorage.setItem('wf_admin_user', _username);
+    showApp();
+  } catch (e) {
+    err.textContent = 'Tidak dapat terhubung ke server.';
+    err.classList.remove('hidden');
+  }
+}
+
+async function doLogout() {
+  await api('POST', '/api/logout').catch(() => {});
+  localStorage.removeItem('wf_admin_token');
+  localStorage.removeItem('wf_admin_user');
+  _token = '';
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('header-user').textContent = _username;
+  switchTab('usage');
+  setWindow('hour');
+  loadUsage();
+}
+
+// ============================================================
+// API helper
+// ============================================================
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {'Authorization': 'Bearer ' + _token, 'Content-Type': 'application/json'}
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  if (res.status === 401) { doLogout(); throw new Error('Sesi berakhir'); }
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ============================================================
+// Tabs
+// ============================================================
+function switchTab(name) {
+  ['usage', 'keys'].forEach(t => {
+    document.getElementById('tab-' + t).className =
+      (t === name ? 'tab-active' : 'tab-inactive') + ' py-3 text-sm cursor-pointer flex items-center gap-1.5';
+    const el = document.getElementById('content-' + t);
+    if (el) el.classList.toggle('hidden', t !== name);
+  });
+  if (name === 'keys') loadKeys();
+}
+
+// ============================================================
+// Usage tab
+// ============================================================
+function setWindow(w) {
+  _currentWindow = w;
+  ['hour', 'day', 'month', 'year'].forEach(x => {
+    const btn = document.getElementById('btn-' + x);
+    if (x === w) {
+      btn.className = 'window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-[#5ba1b5] text-white';
+    } else {
+      btn.className = 'window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]';
+    }
+  });
+  loadUsage();
+}
+
+async function loadUsage() {
+  try {
+    const data = await api('GET', '/api/usage?window=' + _currentWindow);
+    _usageData = data;
+    renderSummary(data.summary);
+    renderChart(data.buckets);
+    renderKeyTable(data.by_key);
+  } catch (e) {
+    console.error('Usage load error:', e);
+  }
+}
+
+function renderSummary(s) {
+  const total = s.total || 0;
+  const success = s.success || 0;
+  const rate = total > 0 ? ((success / total) * 100).toFixed(1) + '%' : '—';
+  document.getElementById('card-total').textContent = total.toLocaleString('id-ID');
+  document.getElementById('card-rate').textContent = rate;
+  document.getElementById('card-rate').className = 'text-2xl font-bold ' + (parseFloat(rate) >= 95 ? 'text-[#28a745]' : 'text-[#dc3545]');
+  document.getElementById('card-latency').textContent = s.avg_latency != null ? s.avg_latency.toLocaleString('id-ID') : '—';
+  document.getElementById('card-keys').textContent = s.active_keys != null ? s.active_keys : '—';
+}
+
+function renderChart(buckets) {
+  const ctx = document.getElementById('usage-chart').getContext('2d');
+  if (_chart) { _chart.destroy(); _chart = null; }
+  if (!buckets || buckets.length === 0) return;
+
+  const labels = buckets.map(b => b.label);
+  const total = buckets.map(b => b.total);
+  const fail = buckets.map(b => (b.total - b.success));
+
+  _chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Sukses',
+          data: buckets.map(b => b.success),
+          backgroundColor: '#28a745',
+          stack: 'req',
+        },
+        {
+          label: 'Gagal',
+          data: fail,
+          backgroundColor: '#dc3545',
+          stack: 'req',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            afterTitle: (items) => {
+              const idx = items[0].dataIndex;
+              return 'Total: ' + (total[idx] || 0);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 }, precision: 0 } }
+      }
+    }
+  });
+}
+
+let _allByKey = [];
+function renderKeyTable(byKey) {
+  _allByKey = byKey || [];
+  applyKeyTableFilter();
+}
+
+function filterKeyTable() {
+  applyKeyTableFilter();
+}
+
+function applyKeyTableFilter() {
+  const q = (document.getElementById('filter-key-label').value || '').toLowerCase();
+  const rows = _allByKey.filter(r => !q || (r.label || '').toLowerCase().includes(q));
+  const tbody = document.getElementById('key-table-body');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada data untuk periode ini.</td></tr>';
+    document.getElementById('key-table-footer').textContent = '';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const total = r.total || 0;
+    const success = r.success || 0;
+    const rate = total > 0 ? ((success / total) * 100).toFixed(1) + '%' : '—';
+    const rateColor = parseFloat(rate) >= 95 ? 'text-[#28a745]' : 'text-[#dc3545]';
+    const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
+    return `<tr class="${rowBg} hover:bg-[#f0f7fa]">
+      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-[#212529]">${esc(r.label || r.api_key)}</td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right font-mono">${total.toLocaleString('id-ID')}</td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right font-mono">${success.toLocaleString('id-ID')}</td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right ${rateColor} font-semibold">${rate}</td>
+      <td class="px-3 py-[7px] text-right font-mono">${r.avg_latency != null ? r.avg_latency.toLocaleString('id-ID') : '—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('key-table-footer').textContent =
+    `Menampilkan ${rows.length} dari ${_allByKey.length} entri`;
+}
+
+// ============================================================
+// Keys tab
+// ============================================================
+async function loadKeys() {
+  try {
+    const data = await api('GET', '/api/keys');
+    _keysData = data.keys || [];
+    applyKeysTableFilter();
+  } catch (e) {
+    document.getElementById('keys-table-body').innerHTML =
+      '<tr><td colspan="5" class="px-3 py-4 text-center text-[#dc3545]">Gagal memuat data.</td></tr>';
+  }
+}
+
+function filterKeysTable() { applyKeysTableFilter(); }
+
+function applyKeysTableFilter() {
+  const ql = (document.getElementById('filter-keys-label').value || '').toLowerCase();
+  const qk = (document.getElementById('filter-keys-key').value || '').toLowerCase();
+  const rows = _keysData.filter(r => {
+    const labelOk = !ql || (r.client_label || '').toLowerCase().includes(ql);
+    const keyOk = !qk || (r.api_key_masked || '').toLowerCase().includes(qk);
+    return labelOk && keyOk;
+  });
+
+  const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const tbody = document.getElementById('keys-table-body');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada API key.</td></tr>';
+    document.getElementById('keys-table-footer').textContent = '';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const active = r.is_active === 1;
+    const badge = active
+      ? '<span class="bg-[#d1eddc] border border-[#28a745] text-[#155724] text-[10px] font-semibold px-2 py-0.5 rounded">Aktif</span>'
+      : '<span class="bg-[#f8d7da] border border-[#dc3545] text-[#721c24] text-[10px] font-semibold px-2 py-0.5 rounded">Dicabut</span>';
+    const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
+    const dt = r.created_at ? new Date(r.created_at) : null;
+    const dateStr = dt
+      ? `${String(dt.getDate()).padStart(2,'0')} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`
+      : '—';
+    const revokeBtn = active
+      ? `<button onclick="openRevokeModal(${r.id}, '${esc(r.client_label || 'tanpa label')}')"
+           class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-[10px] font-semibold px-2 py-1 rounded cursor-pointer flex items-center gap-1">
+           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+           </svg>
+           Cabut
+         </button>`
+      : '';
+    return `<tr class="${rowBg} hover:bg-[#f0f7fa]">
+      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${revokeBtn}</td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${esc(r.client_label || '—')}</td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px] font-mono">
+        <div class="flex items-center gap-2">
+          <span>${esc(r.api_key_masked)}</span>
+          <button onclick="copyText('${esc(r.api_key_full)}', this)"
+            class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-pointer flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Salin
+          </button>
+        </div>
+      </td>
+      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${dateStr}</td>
+      <td class="px-3 py-[7px]">${badge}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('keys-table-footer').textContent =
+    `Menampilkan ${rows.length} dari ${_keysData.length} key`;
+}
+
+// ============================================================
+// Modals
+// ============================================================
+function openCreateModal() {
+  document.getElementById('create-label').value = '';
+  document.getElementById('create-err').classList.add('hidden');
+  document.getElementById('modal-create').classList.remove('hidden');
+  setTimeout(() => document.getElementById('create-label').focus(), 50);
+}
+
+async function doCreateKey() {
+  const label = document.getElementById('create-label').value.trim();
+  const err = document.getElementById('create-err');
+  if (!label) {
+    err.textContent = 'Label tidak boleh kosong.';
+    err.classList.remove('hidden');
+    return;
+  }
+  err.classList.add('hidden');
+  try {
+    const data = await api('POST', '/api/keys', {client_label: label});
+    document.getElementById('created-key').textContent = data.api_key;
+    document.getElementById('created-secret').textContent = data.api_secret;
+    closeModal('modal-create');
+    document.getElementById('modal-created').classList.remove('hidden');
+  } catch (e) {
+    err.textContent = e.message || 'Gagal membuat key.';
+    err.classList.remove('hidden');
+  }
+}
+
+function openRevokeModal(keyId, label) {
+  document.getElementById('revoke-label').textContent = label;
+  const btn = document.getElementById('revoke-confirm-btn');
+  btn.onclick = async () => {
+    try {
+      await api('DELETE', '/api/keys/' + keyId);
+      closeModal('modal-revoke');
+      loadKeys();
+    } catch (e) {
+      alert('Gagal mencabut key: ' + e.message);
+    }
+  };
+  document.getElementById('modal-revoke').classList.remove('hidden');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function copyToClipboard(elemId, btn) {
+  const text = document.getElementById(elemId).textContent;
+  await copyText(text, btn);
+}
+
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Disalin';
+    setTimeout(() => { btn.innerHTML = orig; }, 1500);
+  } catch (e) {
+    console.warn('Clipboard write failed', e);
+  }
+}
+
+// Close modals on overlay click
+['modal-create','modal-created','modal-revoke'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+
+// ============================================================
+// Init
+// ============================================================
+(function init() {
+  if (_token) {
+    showApp();
+  }
+})();
+</script>
+</body>
+</html>

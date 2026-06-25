@@ -21,8 +21,11 @@ services:
       INFERENCE_CONCURRENCY: "1"
       MAX_CONCURRENT_REQUESTS: "0"
       MAX_IMAGE_DIM: "1024"
+      # Shared SQLite DB (usage logs + API keys) — written by api, read by admin.
+      DB_PATH: "/data/wiseface.db"
     volumes:
       - deepface_weights:/home/app/.deepface
+      - wiseface_data:/data
     # 20 workers × ~800 MB + headroom = 25 GB cap.
     mem_limit: 25g
     mem_reservation: 18g
@@ -34,7 +37,7 @@ services:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 30s
       timeout: 5s
-      start_period: 120s
+      start_period: 300s
       retries: 3
     networks:
       - facenet
@@ -91,6 +94,31 @@ services:
     networks:
       - facenet
 
+  # Admin panel — API key management + usage records by time window.
+  # Access at http://<server>:8080 (internal only; do not expose to internet).
+  # Credentials: ADMIN_USER / ADMIN_PASSWORD from .env
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    image: wiseface-admin:1.0.0
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    environment:
+      DB_PATH: "/data/wiseface.db"
+      ADMIN_USER: "${ADMIN_USER:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+    volumes:
+      - wiseface_data:/data
+    ports:
+      - "8080:8080"
+    mem_limit: 256m
+    networks:
+      - facenet
+
   # Stakeholder demo UI (Streamlit). Opt-in: not started by default.
   #   docker compose --profile demo up -d api demo
   # then open http://localhost:8501
@@ -123,6 +151,7 @@ volumes:
   deepface_weights:
   prometheus_data:
   grafana_data:
+  wiseface_data:
 
 networks:
   facenet:

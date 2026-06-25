@@ -12,6 +12,8 @@ import pytest
 
 # Configure the service for tests before any app import reads settings.
 os.environ.setdefault("SKIP_MODEL_WARMUP", "1")
+# Use a temp file so tests never touch /data (which may not exist in CI).
+os.environ.setdefault("DB_PATH", "/tmp/wiseface_test.db")
 os.environ.setdefault(
     "API_CREDENTIALS",
     json.dumps(
