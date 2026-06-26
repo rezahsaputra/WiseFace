@@ -1,363 +1,470 @@
 <!DOCTYPE html>
-<html lang="id">
+<html class="dark" lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WiseFace Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-bright": "#3a3939",
+            "surface-container-high": "#2a2a2a",
+            "secondary-container": "#03b5d3",
+            "secondary": "#4cd7f6",
+            "tertiary-fixed": "#6ffbbe",
+            "surface-container": "#201f1f",
+            "surface-variant": "#353434",
+            "surface-container-highest": "#353434",
+            "tertiary-fixed-dim": "#4edea3",
+            "primary-container": "#a078ff",
+            "error-container": "#93000a",
+            "surface-container-lowest": "#0e0e0e",
+            "primary-fixed": "#e9ddff",
+            "on-surface": "#e5e2e1",
+            "background": "#030303",
+            "outline": "#958ea0",
+            "tertiary-container": "#00a572",
+            "on-error-container": "#ffdad6",
+            "inverse-primary": "#6d3bd7",
+            "on-surface-variant": "#cbc3d7",
+            "secondary-fixed": "#acedff",
+            "surface": "#141313",
+            "surface-container-low": "#1c1b1b",
+            "error": "#ffb4ab",
+            "on-tertiary-fixed-variant": "#005236",
+            "secondary-fixed-dim": "#4cd7f6",
+            "tertiary": "#4edea3",
+            "primary-fixed-dim": "#d0bcff",
+            "surface-dim": "#141313",
+            "outline-variant": "#494454",
+            "primary": "#d0bcff",
+            "surface-tint": "#d0bcff"
+          },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px", "card": "20px" },
+          fontFamily: {
+            "headline-md": ["Instrument Serif", "serif"],
+            "code-sm": ["JetBrains Mono", "monospace"],
+            "body-md": ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; }
-    .tab-active { border-bottom: 2px solid #5ba1b5; color: #5ba1b5; font-weight: 600; }
-    .tab-inactive { border-bottom: 2px solid transparent; color: #6c757d; }
-    .tab-inactive:hover { color: #212529; }
-    input:focus, select:focus { outline: 2px solid #5ba1b5; outline-offset: 1px; }
-    .modal-overlay { background: rgba(0,0,0,0.4); }
+    body { font-family: 'Inter', system-ui, sans-serif; background-color: #030303; }
+    .font-serif-brand { font-family: 'Instrument Serif', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Ambient atmospheric glows */
+    .glow-violet { filter: blur(120px); background: radial-gradient(circle, rgba(208,188,255,0.13) 0%, rgba(208,188,255,0) 70%); }
+    .glow-cyan   { filter: blur(120px); background: radial-gradient(circle, rgba(76,215,246,0.10) 0%, rgba(76,215,246,0) 70%); }
+
+    /* Login orb */
+    .orb-bg {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(6,182,212,0.05) 50%, rgba(3,3,3,0) 70%);
+      filter: blur(80px); z-index: 0; animation: pulse-orb 10s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-orb {
+      0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.6; }
+      100% { transform: translate(-50%,-50%) scale(1.2); opacity: 0.9; }
+    }
+
+    .glass-card {
+      background: rgba(10,10,10,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08); transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .glass-card:hover { border-color: rgba(255,255,255,0.18); }
+
+    .glass-panel {
+      background: rgba(10,10,10,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease;
+    }
+    .glass-panel:hover { border-color: rgba(255,255,255,0.18); }
+
+    .modal-overlay { background: rgba(3,3,3,0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+
+    /* Shiny rotating border button */
+    .shiny-border-btn {
+      position: relative; background: rgba(10,10,10,0.85); z-index: 1; overflow: hidden; border-radius: 8px;
+    }
+    .shiny-border-btn::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent 0 320deg, #8B5CF6 350deg, #4cd7f6 360deg);
+      animation: rotate-gradient 3.5s linear infinite; z-index: -1;
+    }
+    .shiny-border-btn:hover::before { animation-duration: 1.5s; }
+    @keyframes rotate-gradient { to { transform: rotate(360deg); } }
+    .shiny-border-btn-inner {
+      background: #050505; margin: 1px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      height: calc(100% - 2px); width: calc(100% - 2px);
+    }
+
+    .input-glass {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: #e5e2e1; transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .input-glass:focus { outline: none; border-color: #8B5CF6; box-shadow: 0 0 10px rgba(139,92,246,0.3); }
+    .input-glass::placeholder { color: rgba(229,226,225,0.3); }
+
+    /* Tabs */
+    .tab-active   { color: #4cd7f6; border-bottom: 2px solid #4cd7f6; }
+    .tab-inactive { color: #cbc3d7; border-bottom: 2px solid transparent; }
+    .tab-inactive:hover { color: #e5e2e1; }
+
+    /* Window pills */
+    .pill-active   { background: #d0bcff; color: #23005c; border-color: #d0bcff; }
+    .pill-inactive { background: rgba(255,255,255,0.04); color: #cbc3d7; border-color: rgba(255,255,255,0.1); }
+    .pill-inactive:hover { background: rgba(255,255,255,0.08); }
+
+    .pulse-dot-emerald { animation: pulse-emerald 2s infinite; }
+    @keyframes pulse-emerald { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:0.4; transform:scale(1.2);} }
+
+    .stagger-1 { animation: slideUp 0.6s cubic-bezier(0.23,1,0.32,1) forwards; opacity: 0; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity:0;} to { transform: translateY(0); opacity:1;} }
+
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { height: 8px; width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
   </style>
 </head>
-<body class="bg-[#f5f5f5] text-[#212529] text-sm">
+<body class="text-on-surface min-h-screen overflow-x-hidden selection:bg-primary/30 selection:text-primary">
+
+<!-- Ambient background glows (app) -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+  <div class="glow-violet absolute -top-[12%] -left-[8%] w-[560px] h-[560px] rounded-full"></div>
+  <div class="glow-cyan absolute top-[45%] -right-[6%] w-[520px] h-[520px] rounded-full"></div>
+</div>
 
 <!-- ================================================================ LOGIN ================================================================ -->
-<div id="login-page" class="min-h-screen flex items-center justify-center">
-  <div class="bg-white rounded shadow-md w-80 p-8">
-    <div class="flex items-center gap-2 mb-6">
-      <svg class="w-7 h-7 text-[#5ba1b5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-      <span class="text-lg font-bold text-[#5ba1b5]">WiseFace Admin</span>
+<div id="login-page" class="relative min-h-screen flex items-center justify-center p-6">
+  <div class="orb-bg"></div>
+  <main class="relative z-10 w-full max-w-[400px] stagger-1">
+    <div class="glass-card rounded-card p-10 flex flex-col items-center">
+      <div class="flex items-center gap-3 mb-7">
+        <div class="w-[10px] h-[10px] rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4]"></div>
+        <h1 class="font-serif-brand text-[32px] leading-none text-white flex items-baseline gap-1.5">
+          WiseFace
+          <span class="text-[#d0bcff] text-[20px] tracking-tight font-body-md font-semibold">Admin</span>
+        </h1>
+      </div>
+      <p class="text-on-surface-variant text-center mb-9 opacity-80 text-[15px] font-light">
+        Masuk untuk mengelola API keys dan memantau penggunaan.
+      </p>
+      <div class="w-full space-y-6">
+        <div class="space-y-2">
+          <label class="text-[10px] font-semibold tracking-[0.1em] text-white/40 uppercase block px-1">Username</label>
+          <input id="login-user" type="text" value="admin" autocomplete="username"
+            class="input-glass w-full px-5 py-3 rounded-lg font-light" placeholder="admin_identity" />
+        </div>
+        <div class="space-y-2">
+          <label class="text-[10px] font-semibold tracking-[0.1em] text-white/40 uppercase block px-1">Password</label>
+          <input id="login-pass" type="password" autocomplete="current-password"
+            class="input-glass w-full px-5 py-3 rounded-lg font-light" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+            onkeydown="if(event.key==='Enter') doLogin()" />
+        </div>
+        <div id="login-err" class="hidden items-center justify-center text-red-400 text-[12px] font-semibold tracking-wide">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-400 mr-2 shadow-[0_0_8px_#ef4444]"></span>
+          <span id="login-err-text">Kredensial tidak valid.</span>
+        </div>
+        <div class="pt-2">
+          <button onclick="doLogin()" class="shiny-border-btn w-full h-[52px]">
+            <div class="shiny-border-btn-inner text-white font-semibold tracking-wide">Masuk</div>
+          </button>
+        </div>
+      </div>
+      <div class="mt-9 flex justify-between w-full text-[10px] tracking-[0.1em] font-semibold uppercase text-white/30">
+        <span class="cursor-default">Sistem Biometrik Presisi</span>
+        <span class="cursor-default">v2.4.0</span>
+      </div>
     </div>
-    <div class="mb-4">
-      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Username</label>
-      <input id="login-user" type="text" value="admin" autocomplete="username"
-        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm" />
-    </div>
-    <div class="mb-6">
-      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Password</label>
-      <input id="login-pass" type="password" autocomplete="current-password"
-        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm"
-        onkeydown="if(event.key==='Enter') doLogin()" />
-    </div>
-    <p id="login-err" class="text-[#dc3545] text-xs mb-3 hidden"></p>
-    <button onclick="doLogin()"
-      class="w-full bg-[#5ba1b5] hover:bg-[#4a90a4] text-white font-semibold py-2 rounded text-sm cursor-pointer flex items-center justify-center gap-2">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-      </svg>
-      Masuk
-    </button>
-  </div>
+  </main>
 </div>
 
 <!-- ================================================================ APP ================================================================ -->
-<div id="app" class="hidden min-h-screen flex flex-col">
+<div id="app" class="hidden relative z-10 min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="bg-[#5ba1b5] text-white px-6 py-3 flex items-center justify-between shadow">
-    <div class="flex items-center gap-2">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-      <span class="font-bold text-base">WiseFace Admin</span>
+  <header class="sticky top-0 h-[56px] bg-black/70 backdrop-blur-xl border-b border-white/10 px-8 flex items-center justify-between z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-[10px] h-[10px] rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4]"></div>
+      <span class="font-serif-brand text-[26px] leading-none text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">WiseFace</span>
+      <span class="text-[10px] font-semibold tracking-[0.18em] uppercase text-on-surface-variant/70 hidden sm:block ml-1">Precision Biometrics</span>
     </div>
-    <div class="flex items-center gap-4">
-      <span id="header-user" class="text-sm text-white/80"></span>
+    <div class="flex items-center gap-5">
+      <span id="header-user" class="text-sm text-on-surface-variant font-mono"></span>
+      <div class="h-7 w-px bg-white/10"></div>
       <button onclick="doLogout()"
-        class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-        </svg>
+        class="text-primary text-sm hover:bg-white/5 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95">
+        <span class="material-symbols-outlined text-[18px]">logout</span>
         Keluar
       </button>
     </div>
   </header>
 
-  <!-- Tabs -->
-  <div class="bg-white border-b border-[#dee2e6] px-6 flex gap-6">
+  <!-- Tab strip -->
+  <div class="sticky top-[56px] h-[48px] bg-surface-container/40 backdrop-blur-md border-b border-white/5 flex justify-center items-center gap-8 z-30">
     <button id="tab-usage" onclick="switchTab('usage')"
-      class="tab-active py-3 text-sm cursor-pointer flex items-center gap-1.5">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-      </svg>
+      class="tab-active h-full flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] cursor-pointer">
+      <span class="material-symbols-outlined text-[18px]">monitoring</span>
       Penggunaan
     </button>
     <button id="tab-keys" onclick="switchTab('keys')"
-      class="tab-inactive py-3 text-sm cursor-pointer flex items-center gap-1.5">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-      </svg>
+      class="tab-inactive h-full flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] cursor-pointer">
+      <span class="material-symbols-outlined text-[18px]">key</span>
       API Keys
     </button>
   </div>
 
   <!-- ========================== USAGE TAB ========================== -->
-  <div id="content-usage" class="flex-1 p-6">
+  <div id="content-usage" class="flex-1 px-8 py-8 max-w-[1440px] w-full mx-auto">
 
-    <!-- Time window filter -->
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mr-1">Periode:</span>
-      <button onclick="setWindow('hour')" id="btn-hour"
-        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-[#5ba1b5] text-white">
-        1 Jam Terakhir
-      </button>
-      <button onclick="setWindow('day')" id="btn-day"
-        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
-        24 Jam Terakhir
-      </button>
-      <button onclick="setWindow('month')" id="btn-month"
-        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
-        30 Hari Terakhir
-      </button>
-      <button onclick="setWindow('year')" id="btn-year"
-        class="window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]">
-        1 Tahun Terakhir
-      </button>
-      <button onclick="loadUsage()" class="ml-2 bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Refresh
+    <div class="mb-8">
+      <h2 class="font-serif-brand text-[32px] leading-tight text-on-surface mb-1">Ringkasan Penggunaan</h2>
+      <p class="text-on-surface-variant font-light">Pantau volume request dan performa biometrik WiseFace per rentang waktu.</p>
+    </div>
+
+    <!-- Time window pills -->
+    <div class="flex flex-wrap items-center gap-2 mb-7">
+      <span class="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-surface-variant/70 mr-1">Periode</span>
+      <button onclick="setWindow('hour')"  id="btn-hour"  class="pill-active   px-4 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all">1 Jam</button>
+      <button onclick="setWindow('day')"   id="btn-day"   class="pill-inactive px-4 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all">24 Jam</button>
+      <button onclick="setWindow('month')" id="btn-month" class="pill-inactive px-4 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all">30 Hari</button>
+      <button onclick="setWindow('year')"  id="btn-year"  class="pill-inactive px-4 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all">1 Tahun</button>
+      <button onclick="loadUsage()" class="ml-2 shiny-border-btn h-[34px]">
+        <div class="shiny-border-btn-inner px-4 text-primary text-xs font-semibold flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">refresh</span> Refresh
+        </div>
       </button>
     </div>
 
     <!-- Summary cards -->
-    <div class="grid grid-cols-4 gap-4 mb-5">
-      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Total Request</div>
-        <div id="card-total" class="text-2xl font-bold text-[#212529]">—</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+      <div class="glass-panel p-6 rounded-xl">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary mb-2">Total Request</p>
+        <h3 id="card-total" class="font-mono text-[28px] font-semibold text-secondary">&mdash;</h3>
       </div>
-      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Success Rate</div>
-        <div id="card-rate" class="text-2xl font-bold text-[#28a745]">—</div>
+      <div class="glass-panel p-6 rounded-xl">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary mb-2">Success Rate</p>
+        <h3 id="card-rate" class="font-mono text-[28px] font-semibold text-tertiary">&mdash;</h3>
       </div>
-      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Rata-rata Latency</div>
-        <div id="card-latency" class="text-2xl font-bold text-[#212529]">—</div>
-        <div class="text-[11px] text-[#6c757d]">ms</div>
+      <div class="glass-panel p-6 rounded-xl">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary mb-2">Rata-rata Latency</p>
+        <h3 class="font-mono text-[28px] font-semibold text-on-surface">
+          <span id="card-latency">&mdash;</span><span class="text-sm text-on-surface-variant font-light ml-1">ms</span>
+        </h3>
       </div>
-      <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Key Aktif</div>
-        <div id="card-keys" class="text-2xl font-bold text-[#212529]">—</div>
+      <div class="glass-panel p-6 rounded-xl">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary mb-2">API Key Aktif</p>
+        <h3 id="card-keys" class="font-mono text-[28px] font-semibold text-on-surface">&mdash;</h3>
       </div>
     </div>
 
     <!-- Chart -->
-    <div class="bg-white rounded shadow-sm border border-[#dee2e6] p-4 mb-5">
-      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-3">Request per Waktu</div>
-      <div style="height:220px; position:relative;">
+    <div class="glass-panel p-6 rounded-xl mb-7">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary mb-4">Request per Waktu</p>
+      <div style="height:240px; position:relative;">
         <canvas id="usage-chart"></canvas>
       </div>
     </div>
 
     <!-- Per-key breakdown table -->
-    <div class="bg-white rounded shadow-sm border border-[#dee2e6]">
-      <div class="px-4 py-3 border-b border-[#dee2e6]">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d]">Penggunaan per API Key</span>
+    <div class="glass-panel rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-white/5">
+        <span class="text-[10px] font-semibold uppercase tracking-[0.1em] text-primary">Penggunaan per API Key</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-xs whitespace-nowrap">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
           <thead>
-            <tr class="bg-[#d1d1d1] text-[#212529] text-[11px] font-bold uppercase tracking-wider">
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Label</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Total</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Sukses</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-right">Success Rate</th>
-              <th class="px-3 py-2 text-right">Avg Latency (ms)</th>
+            <tr class="bg-white/5">
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10">Label</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 text-right">Total</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 text-right">Sukses</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 text-right">Success Rate</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 text-right">Avg Latency (ms)</th>
             </tr>
-            <tr class="bg-[#f8f9fa]">
-              <td class="border-r border-[#dee2e6] px-2 py-1">
-                <input id="filter-key-label" oninput="filterKeyTable()" placeholder="Cari label..."
-                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+            <tr class="bg-black/20">
+              <td class="px-6 py-2 border-b border-white/5">
+                <input id="filter-key-label" oninput="filterKeyTable()" placeholder="Cari label&hellip;"
+                  class="input-glass text-[11px] rounded px-2 py-1 w-full italic" />
               </td>
-              <td class="border-r border-[#dee2e6]"></td>
-              <td class="border-r border-[#dee2e6]"></td>
-              <td class="border-r border-[#dee2e6]"></td>
-              <td></td>
+              <td class="border-b border-white/5"></td>
+              <td class="border-b border-white/5"></td>
+              <td class="border-b border-white/5"></td>
+              <td class="border-b border-white/5"></td>
             </tr>
           </thead>
           <tbody id="key-table-body">
-            <tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
+            <tr><td colspan="5" class="px-6 py-5 text-center text-on-surface-variant">Memuat data&hellip;</td></tr>
           </tbody>
         </table>
       </div>
-      <div id="key-table-footer" class="bg-[#d1d1d1] px-3 py-1.5 text-[11px] text-[#6c757d]"></div>
+      <div id="key-table-footer" class="bg-white/5 px-6 py-2 text-[11px] text-on-surface-variant"></div>
     </div>
   </div>
 
   <!-- ========================== KEYS TAB ========================== -->
-  <div id="content-keys" class="hidden flex-1 p-6">
-    <div class="flex items-center justify-between mb-5">
-      <span class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d]">Daftar API Key</span>
-      <button onclick="openCreateModal()"
-        class="bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-3 py-2 rounded flex items-center gap-1.5 cursor-pointer">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Generate Key Baru
+  <div id="content-keys" class="hidden flex-1 px-8 py-8 max-w-[1440px] w-full mx-auto">
+
+    <div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+      <div>
+        <h2 class="font-serif-brand text-[32px] leading-tight text-on-surface mb-1">Daftar API Key</h2>
+        <p class="text-on-surface-variant font-light">Kelola kredensial akses untuk integrasi sistem biometrik WiseFace Anda.</p>
+      </div>
+      <button onclick="openCreateModal()" class="shiny-border-btn h-[46px]">
+        <div class="shiny-border-btn-inner px-6 text-on-surface font-semibold flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">key</span>
+          Generate Key Baru
+        </div>
       </button>
     </div>
 
-    <div class="bg-white rounded shadow-sm border border-[#dee2e6]">
+    <div class="glass-panel rounded-xl overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-xs whitespace-nowrap">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
           <thead>
-            <tr class="bg-[#d1d1d1] text-[#212529] text-[11px] font-bold uppercase tracking-wider">
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left w-20">Aksi</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Label</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">API Key</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">API Secret</th>
-              <th class="border-r border-[#dee2e6] px-3 py-2 text-left">Dibuat</th>
-              <th class="px-3 py-2 text-left">Status</th>
+            <tr class="bg-white/5">
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 w-24">Aksi</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10">Label</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10">API Key</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10">API Secret</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10">Dibuat</th>
+              <th class="px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary border-b border-white/10 text-center">Status</th>
             </tr>
-            <tr class="bg-[#f8f9fa]">
-              <td class="border-r border-[#dee2e6] px-2 py-1"></td>
-              <td class="border-r border-[#dee2e6] px-2 py-1">
-                <input id="filter-keys-label" oninput="filterKeysTable()" placeholder="Cari label..."
-                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+            <tr class="bg-black/20">
+              <td class="border-b border-white/5"></td>
+              <td class="px-6 py-2 border-b border-white/5">
+                <input id="filter-keys-label" oninput="filterKeysTable()" placeholder="Cari label&hellip;"
+                  class="input-glass text-[11px] rounded px-2 py-1 w-full italic" />
               </td>
-              <td class="border-r border-[#dee2e6] px-2 py-1">
-                <input id="filter-keys-key" oninput="filterKeysTable()" placeholder="Cari key..."
-                  class="text-[11px] border border-[#ced4da] rounded-[3px] italic w-full px-1 py-0.5" />
+              <td class="px-6 py-2 border-b border-white/5">
+                <input id="filter-keys-key" oninput="filterKeysTable()" placeholder="Cari key&hellip;"
+                  class="input-glass text-[11px] rounded px-2 py-1 w-full italic" />
               </td>
-              <td class="border-r border-[#dee2e6]"></td>
-              <td class="border-r border-[#dee2e6]"></td>
-              <td></td>
+              <td class="border-b border-white/5"></td>
+              <td class="border-b border-white/5"></td>
+              <td class="border-b border-white/5"></td>
             </tr>
           </thead>
           <tbody id="keys-table-body">
-            <tr><td colspan="6" class="px-3 py-4 text-center text-[#6c757d]">Memuat data...</td></tr>
+            <tr><td colspan="6" class="px-6 py-5 text-center text-on-surface-variant">Memuat data&hellip;</td></tr>
           </tbody>
         </table>
       </div>
-      <div id="keys-table-footer" class="bg-[#d1d1d1] px-3 py-1.5 text-[11px] text-[#6c757d]"></div>
+      <div id="keys-table-footer" class="bg-white/5 px-6 py-2 text-[11px] text-on-surface-variant"></div>
     </div>
   </div>
 
 </div><!-- /app -->
 
 <!-- ======================= MODAL: Create Key ======================= -->
-<div id="modal-create" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
-  <div class="bg-white rounded shadow-lg w-96 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <span class="font-bold text-sm text-[#212529]">Generate API Key Baru</span>
-      <button onclick="closeModal('modal-create')" class="text-[#6c757d] hover:text-[#212529] cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+<div id="modal-create" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+  <div class="glass-panel w-full max-w-[480px] rounded-xl p-8 flex flex-col gap-6">
+    <div class="space-y-1">
+      <h2 class="font-serif-brand text-[28px] leading-tight text-primary">Generate API Key Baru</h2>
+      <p class="text-on-surface-variant text-sm font-light">Berikan label untuk mengidentifikasi penggunaan kunci ini di dashboard Anda.</p>
     </div>
-    <div class="mb-4">
-      <label class="block text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">Label Aplikasi</label>
+    <div class="space-y-2">
+      <label class="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-surface-variant block">Label Kunci</label>
       <input id="create-label" type="text" placeholder="cth: Android Attendance App"
-        class="w-full border border-[#ced4da] rounded px-3 py-2 text-sm"
+        class="input-glass w-full px-4 py-3 rounded-lg font-light"
         onkeydown="if(event.key==='Enter') doCreateKey()" />
-      <p class="text-[11px] text-[#6c757d] mt-1">Nama identifikasi untuk key ini (digunakan untuk monitoring).</p>
+      <p class="text-[11px] text-on-surface-variant/70">Nama identifikasi untuk key ini (digunakan untuk monitoring).</p>
     </div>
-    <p id="create-err" class="text-[#dc3545] text-xs mb-3 hidden"></p>
-    <div class="flex gap-2 justify-end">
+    <p id="create-err" class="text-error text-xs hidden"></p>
+    <div class="flex items-center justify-end gap-4 pt-2">
       <button onclick="closeModal('modal-create')"
-        class="bg-[#ffc107] text-[#212529] text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-        Batal
-      </button>
-      <button onclick="doCreateKey()"
-        class="bg-[#2d6b4d] hover:bg-[#255c41] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Generate
+        class="px-6 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors font-semibold text-sm">Batal</button>
+      <button onclick="doCreateKey()" class="shiny-border-btn h-[44px]">
+        <div class="shiny-border-btn-inner px-8 text-primary font-semibold text-sm flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">add</span> Generate
+        </div>
       </button>
     </div>
   </div>
 </div>
 
 <!-- ======================= MODAL: Key Created ======================= -->
-<div id="modal-created" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
-  <div class="bg-white rounded shadow-lg w-[480px] p-6">
-    <div class="flex items-center gap-2 mb-4">
-      <svg class="w-5 h-5 text-[#28a745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-      </svg>
-      <span class="font-bold text-sm text-[#212529]">API Key Berhasil Dibuat</span>
-    </div>
-    <div class="bg-[#fff3cd] border border-[#ffc107] rounded p-3 mb-4 text-xs text-[#856404]">
-      Simpan API Secret sekarang. Secret tidak akan ditampilkan lagi setelah modal ini ditutup.
-    </div>
-    <div class="mb-3">
-      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Key</div>
-      <div class="flex items-center gap-2">
-        <code id="created-key" class="flex-1 bg-[#f8f9fa] border border-[#dee2e6] rounded px-3 py-2 text-xs font-mono break-all"></code>
-        <button onclick="copyToClipboard('created-key', this)"
-          class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-2 py-2 rounded cursor-pointer flex items-center gap-1">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-          Salin
-        </button>
+<div id="modal-created" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+  <div class="glass-panel w-full max-w-[560px] rounded-xl p-8 flex flex-col gap-6">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-tertiary" style="font-variation-settings:'FILL' 1;">check_circle</span>
+      </div>
+      <div>
+        <h2 class="font-serif-brand text-[26px] leading-tight text-on-surface">Kunci Berhasil Dibuat</h2>
+        <p class="text-on-surface-variant text-sm font-light">Simpan API Secret sekarang secara aman.</p>
       </div>
     </div>
-    <div class="mb-5">
-      <div class="text-[11px] font-bold uppercase tracking-wider text-[#6c757d] mb-1">API Secret</div>
-      <div class="flex items-center gap-2">
-        <code id="created-secret" class="flex-1 bg-[#f8f9fa] border border-[#dee2e6] rounded px-3 py-2 text-xs font-mono break-all"></code>
-        <button onclick="copyToClipboard('created-secret', this)"
-          class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-2 py-2 rounded cursor-pointer flex items-center gap-1">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-          Salin
-        </button>
+    <div class="p-4 bg-amber-400/5 border border-amber-300/20 rounded-lg flex gap-3">
+      <span class="material-symbols-outlined text-amber-300 text-[20px] shrink-0">warning</span>
+      <p class="text-xs text-amber-300/90 leading-relaxed">
+        Demi keamanan, API Secret ini tidak akan ditampilkan lagi setelah jendela ini ditutup. Jika hilang, Anda harus membuat kunci baru.
+      </p>
+    </div>
+    <div class="space-y-4">
+      <div class="space-y-1.5">
+        <label class="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-surface-variant">API Key</label>
+        <div class="flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg p-1.5 px-3">
+          <code id="created-key" class="flex-1 font-mono text-[13px] text-secondary break-all"></code>
+          <button onclick="copyToClipboard('created-key', this)"
+            class="p-2 hover:bg-white/5 rounded transition-colors text-on-surface-variant shrink-0">
+            <span class="material-symbols-outlined text-[18px]">content_copy</span>
+          </button>
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        <label class="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-surface-variant">API Secret</label>
+        <div class="flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg p-1.5 px-3">
+          <code id="created-secret" class="flex-1 font-mono text-[13px] text-primary break-all"></code>
+          <button onclick="copyToClipboard('created-secret', this)"
+            class="p-2 hover:bg-white/5 rounded transition-colors text-on-surface-variant shrink-0">
+            <span class="material-symbols-outlined text-[18px]">content_copy</span>
+          </button>
+        </div>
       </div>
     </div>
-    <div class="flex justify-end">
+    <div class="flex items-center justify-end pt-2">
       <button onclick="closeModal('modal-created'); loadKeys()"
-        class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-        Selesai
-      </button>
+        class="px-8 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 font-semibold text-sm transition-all active:scale-95">Selesai</button>
     </div>
   </div>
 </div>
 
 <!-- ======================= MODAL: Revoke Confirm ======================= -->
-<div id="modal-revoke" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
-  <div class="bg-white rounded shadow-lg w-80 p-6">
-    <div class="flex items-center gap-2 mb-3">
-      <svg class="w-5 h-5 text-[#dc3545]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-      </svg>
-      <span class="font-bold text-sm text-[#212529]">Cabut API Key?</span>
+<div id="modal-revoke" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+  <div class="glass-panel w-full max-w-[420px] rounded-xl p-8 flex flex-col items-center text-center gap-6">
+    <div class="w-16 h-16 rounded-full bg-error-container/20 flex items-center justify-center">
+      <span class="material-symbols-outlined text-error text-[40px]" style="font-variation-settings:'FILL' 1;">warning</span>
     </div>
-    <p class="text-xs text-[#6c757d] mb-1">Label: <strong id="revoke-label" class="text-[#212529]"></strong></p>
-    <p class="text-xs text-[#6c757d] mb-5">Aksi ini tidak dapat dibatalkan. Semua request menggunakan key ini akan gagal dengan 401.</p>
-    <div class="flex gap-2 justify-end">
+    <div class="space-y-2">
+      <h2 class="font-serif-brand text-[26px] leading-tight text-on-surface">Cabut API Key?</h2>
+      <p class="text-on-surface-variant text-sm font-light">
+        Label: <strong id="revoke-label" class="text-on-surface font-semibold"></strong>
+      </p>
+      <p class="text-on-surface-variant text-sm font-light">
+        Tindakan ini tidak dapat dibatalkan. Semua request yang menggunakan kunci ini akan gagal dengan 401.
+      </p>
+    </div>
+    <div class="grid grid-cols-2 w-full gap-4 pt-2">
       <button onclick="closeModal('modal-revoke')"
-        class="bg-[#ffc107] text-[#212529] text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-        Batal
-      </button>
+        class="px-6 py-3 rounded-lg font-semibold text-sm border border-white/10 hover:bg-white/5 transition-all">Batal</button>
       <button id="revoke-confirm-btn"
-        class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-        </svg>
-        Cabut
+        class="px-6 py-3 rounded-lg font-semibold text-sm bg-error-container text-on-error-container hover:bg-opacity-80 transition-all active:scale-95 flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">delete</span> Cabut
       </button>
     </div>
   </div>
@@ -382,6 +489,7 @@ async function doLogin() {
   const pass = document.getElementById('login-pass').value;
   const err = document.getElementById('login-err');
   err.classList.add('hidden');
+  err.classList.remove('flex');
   try {
     const res = await fetch('/api/login', {
       method: 'POST',
@@ -390,8 +498,7 @@ async function doLogin() {
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      err.textContent = d.detail || 'Username atau password salah.';
-      err.classList.remove('hidden');
+      showLoginError(d.detail || 'Username atau password salah.');
       return;
     }
     const data = await res.json();
@@ -401,9 +508,15 @@ async function doLogin() {
     localStorage.setItem('wf_admin_user', _username);
     showApp();
   } catch (e) {
-    err.textContent = 'Tidak dapat terhubung ke server.';
-    err.classList.remove('hidden');
+    showLoginError('Tidak dapat terhubung ke server.');
   }
+}
+
+function showLoginError(msg) {
+  const err = document.getElementById('login-err');
+  document.getElementById('login-err-text').textContent = msg;
+  err.classList.remove('hidden');
+  err.classList.add('flex');
 }
 
 async function doLogout() {
@@ -447,8 +560,9 @@ async function api(method, path, body) {
 // ============================================================
 function switchTab(name) {
   ['usage', 'keys'].forEach(t => {
-    document.getElementById('tab-' + t).className =
-      (t === name ? 'tab-active' : 'tab-inactive') + ' py-3 text-sm cursor-pointer flex items-center gap-1.5';
+    const btn = document.getElementById('tab-' + t);
+    btn.className = (t === name ? 'tab-active' : 'tab-inactive') +
+      ' h-full flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.1em] cursor-pointer';
     const el = document.getElementById('content-' + t);
     if (el) el.classList.toggle('hidden', t !== name);
   });
@@ -462,11 +576,8 @@ function setWindow(w) {
   _currentWindow = w;
   ['hour', 'day', 'month', 'year'].forEach(x => {
     const btn = document.getElementById('btn-' + x);
-    if (x === w) {
-      btn.className = 'window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-[#5ba1b5] text-white';
-    } else {
-      btn.className = 'window-btn px-3 py-1.5 text-xs font-semibold rounded border border-[#dee2e6] cursor-pointer bg-white text-[#495057]';
-    }
+    const base = 'px-4 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ';
+    btn.className = base + (x === w ? 'pill-active' : 'pill-inactive');
   });
   loadUsage();
 }
@@ -488,8 +599,9 @@ function renderSummary(s) {
   const success = s.success || 0;
   const rate = total > 0 ? ((success / total) * 100).toFixed(1) + '%' : '—';
   document.getElementById('card-total').textContent = total.toLocaleString('id-ID');
-  document.getElementById('card-rate').textContent = rate;
-  document.getElementById('card-rate').className = 'text-2xl font-bold ' + (parseFloat(rate) >= 95 ? 'text-[#28a745]' : 'text-[#dc3545]');
+  const rateEl = document.getElementById('card-rate');
+  rateEl.textContent = rate;
+  rateEl.className = 'font-mono text-[28px] font-semibold ' + (parseFloat(rate) >= 95 ? 'text-tertiary' : 'text-error');
   document.getElementById('card-latency').textContent = s.avg_latency != null ? s.avg_latency.toLocaleString('id-ID') : '—';
   document.getElementById('card-keys').textContent = s.active_keys != null ? s.active_keys : '—';
 }
@@ -502,32 +614,29 @@ function renderChart(buckets) {
   const labels = buckets.map(b => b.label);
   const total = buckets.map(b => b.total);
   const fail = buckets.map(b => (b.total - b.success));
+  const gridColor = 'rgba(255,255,255,0.06)';
+  const tickColor = '#cbc3d7';
 
   _chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        {
-          label: 'Sukses',
-          data: buckets.map(b => b.success),
-          backgroundColor: '#28a745',
-          stack: 'req',
-        },
-        {
-          label: 'Gagal',
-          data: fail,
-          backgroundColor: '#dc3545',
-          stack: 'req',
-        }
+        { label: 'Sukses', data: buckets.map(b => b.success), backgroundColor: '#4edea3', stack: 'req', borderRadius: 3 },
+        { label: 'Gagal',  data: fail,                        backgroundColor: '#ffb4ab', stack: 'req', borderRadius: 3 }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        legend: { position: 'bottom', labels: { font: { size: 11 }, color: tickColor } },
         tooltip: {
+          backgroundColor: 'rgba(10,10,10,0.9)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#e5e2e1',
+          bodyColor: '#cbc3d7',
           callbacks: {
             afterTitle: (items) => {
               const idx = items[0].dataIndex;
@@ -537,8 +646,8 @@ function renderChart(buckets) {
         }
       },
       scales: {
-        x: { stacked: true, ticks: { font: { size: 11 } } },
-        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 }, precision: 0 } }
+        x: { stacked: true, ticks: { font: { size: 11 }, color: tickColor }, grid: { color: gridColor } },
+        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 }, precision: 0, color: tickColor }, grid: { color: gridColor } }
       }
     }
   });
@@ -559,22 +668,21 @@ function applyKeyTableFilter() {
   const rows = _allByKey.filter(r => !q || (r.label || '').toLowerCase().includes(q));
   const tbody = document.getElementById('key-table-body');
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada data untuk periode ini.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-5 text-center text-on-surface-variant">Tidak ada data untuk periode ini.</td></tr>';
     document.getElementById('key-table-footer').textContent = '';
     return;
   }
-  tbody.innerHTML = rows.map((r, i) => {
+  tbody.innerHTML = rows.map((r) => {
     const total = r.total || 0;
     const success = r.success || 0;
     const rate = total > 0 ? ((success / total) * 100).toFixed(1) + '%' : '—';
-    const rateColor = parseFloat(rate) >= 95 ? 'text-[#28a745]' : 'text-[#dc3545]';
-    const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
-    return `<tr class="${rowBg} hover:bg-[#f0f7fa]">
-      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-[#212529]">${esc(r.label || r.api_key)}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right font-mono">${total.toLocaleString('id-ID')}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right font-mono">${success.toLocaleString('id-ID')}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px] text-right ${rateColor} font-semibold">${rate}</td>
-      <td class="px-3 py-[7px] text-right font-mono">${r.avg_latency != null ? r.avg_latency.toLocaleString('id-ID') : '—'}</td>
+    const rateColor = parseFloat(rate) >= 95 ? 'text-tertiary' : 'text-error';
+    return `<tr class="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+      <td class="px-6 py-3 text-on-surface">${esc(r.label || r.api_key)}</td>
+      <td class="px-6 py-3 text-right font-mono text-secondary">${total.toLocaleString('id-ID')}</td>
+      <td class="px-6 py-3 text-right font-mono text-on-surface-variant">${success.toLocaleString('id-ID')}</td>
+      <td class="px-6 py-3 text-right font-mono font-semibold ${rateColor}">${rate}</td>
+      <td class="px-6 py-3 text-right font-mono text-on-surface-variant">${r.avg_latency != null ? r.avg_latency.toLocaleString('id-ID') : '—'}</td>
     </tr>`;
   }).join('');
   document.getElementById('key-table-footer').textContent =
@@ -587,35 +695,23 @@ function applyKeyTableFilter() {
 const _revealedKeys    = new Set(); // key IDs with api_key revealed
 const _revealedSecrets = new Set(); // key IDs with api_secret revealed
 
-const _iconEye = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-    d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-</svg>`;
-const _iconEyeOff = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-</svg>`;
-const _iconCopy = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-</svg>`;
-
 function togglePeekKey(id)    { _revealedKeys.has(id)    ? _revealedKeys.delete(id)    : _revealedKeys.add(id);    applyKeysTableFilter(); }
 function togglePeekSecret(id) { _revealedSecrets.has(id) ? _revealedSecrets.delete(id) : _revealedSecrets.add(id); applyKeysTableFilter(); }
 
-function _peekCell(id, fullValue, revealedSet, toggleFn) {
-  const revealed  = revealedSet.has(id);
-  const display   = revealed ? esc(fullValue) : esc((fullValue||'').slice(0,8) + '...' + (fullValue||'').slice(-4));
-  const eyeBtn    = `<button onclick="${toggleFn}(${id})" title="${revealed ? 'Sembunyikan' : 'Tampilkan'}"
-    class="bg-[#6c757d] hover:bg-[#5a6268] text-white text-[10px] px-1.5 py-0.5 rounded cursor-pointer flex items-center">
-    ${revealed ? _iconEyeOff : _iconEye}
+function _peekCell(id, fullValue, revealedSet, toggleFn, color) {
+  const revealed = revealedSet.has(id);
+  const display  = revealed ? esc(fullValue) : esc((fullValue||'').slice(0,8) + '…' + (fullValue||'').slice(-4));
+  const eyeIcon  = revealed ? 'visibility_off' : 'visibility';
+  const eyeBtn   = `<button onclick="${toggleFn}(${id})" title="${revealed ? 'Sembunyikan' : 'Tampilkan'}"
+    class="text-on-surface-variant hover:text-primary transition-colors shrink-0">
+    <span class="material-symbols-outlined text-[16px]">${eyeIcon}</span>
   </button>`;
-  const copyBtn   = `<button onclick="copyText('${esc(fullValue)}', this)"
-    class="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-pointer flex items-center gap-1">
-    ${_iconCopy} Salin
+  const copyBtn  = `<button onclick="copyText('${esc(fullValue)}', this)" title="Salin"
+    class="text-on-surface-variant hover:text-tertiary transition-colors shrink-0">
+    <span class="material-symbols-outlined text-[16px]">content_copy</span>
   </button>`;
-  return `<div class="flex items-center gap-1.5">
-    <span class="font-mono text-[11px] min-w-[120px]">${display}</span>
+  return `<div class="flex items-center gap-2">
+    <code class="font-mono text-[12px] ${color} min-w-[130px]">${display}</code>
     ${eyeBtn}${copyBtn}
   </div>`;
 }
@@ -627,7 +723,7 @@ async function loadKeys() {
     applyKeysTableFilter();
   } catch (e) {
     document.getElementById('keys-table-body').innerHTML =
-      '<tr><td colspan="6" class="px-3 py-4 text-center text-[#dc3545]">Gagal memuat data.</td></tr>';
+      '<tr><td colspan="6" class="px-6 py-5 text-center text-error">Gagal memuat data.</td></tr>';
   }
 }
 
@@ -645,41 +741,45 @@ function applyKeysTableFilter() {
   const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const tbody = document.getElementById('keys-table-body');
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-[#6c757d]">Tidak ada API key.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-5 text-center text-on-surface-variant">Tidak ada API key.</td></tr>';
     document.getElementById('keys-table-footer').textContent = '';
     return;
   }
-  tbody.innerHTML = rows.map((r, i) => {
+  tbody.innerHTML = rows.map((r) => {
     const active  = r.is_active === 1;
     const badge   = active
-      ? '<span class="bg-[#d1eddc] border border-[#28a745] text-[#155724] text-[10px] font-semibold px-2 py-0.5 rounded">Aktif</span>'
-      : '<span class="bg-[#f8d7da] border border-[#dc3545] text-[#721c24] text-[10px] font-semibold px-2 py-0.5 rounded">Dicabut</span>';
-    const rowBg   = i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
+      ? `<div class="flex items-center justify-center gap-2">
+           <div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(78,222,163,0.6)] pulse-dot-emerald"></div>
+           <span class="text-[10px] font-semibold uppercase tracking-[0.1em] text-tertiary">Aktif</span>
+         </div>`
+      : `<div class="flex items-center justify-center gap-2">
+           <div class="w-2 h-2 rounded-full bg-error/60"></div>
+           <span class="text-[10px] font-semibold uppercase tracking-[0.1em] text-error">Dicabut</span>
+         </div>`;
     const dt      = r.created_at ? new Date(r.created_at) : null;
     const dateStr = dt
       ? `${String(dt.getDate()).padStart(2,'0')} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`
       : '—';
     const revokeBtn = active
       ? `<button onclick="openRevokeModal(${r.id}, '${esc(r.client_label || 'tanpa label')}')"
-           class="bg-[#dc3545] hover:bg-[#c0392b] text-white text-[10px] font-semibold px-2 py-1 rounded cursor-pointer flex items-center gap-1">
-           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-           </svg>
-           Cabut
+           class="px-3 py-1.5 rounded-lg border border-error/30 text-error hover:bg-error/10 transition-all text-[10px] font-semibold uppercase tracking-wider">
+           Revoke
          </button>`
-      : '';
-    return `<tr class="${rowBg} hover:bg-[#f0f7fa]">
-      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${revokeBtn}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${esc(r.client_label || '—')}</td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px]">
-        ${_peekCell(r.id, r.api_key_full, _revealedKeys, 'togglePeekKey')}
+      : `<span class="text-[10px] text-on-surface-variant/60 uppercase tracking-wider">Permanen</span>`;
+    const rowOpacity = active ? '' : ' opacity-60';
+    return `<tr class="border-b border-white/5 hover:bg-white/[0.03] transition-colors${rowOpacity}">
+      <td class="px-6 py-4">${revokeBtn}</td>
+      <td class="px-6 py-4">
+        <span class="text-on-surface block">${esc(r.client_label || '—')}</span>
       </td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px]">
-        ${_peekCell(r.id, r.api_secret, _revealedSecrets, 'togglePeekSecret')}
+      <td class="px-6 py-4">
+        ${_peekCell(r.id, r.api_key, _revealedKeys, 'togglePeekKey', 'text-secondary')}
       </td>
-      <td class="border-r border-[#dee2e6] px-3 py-[7px]">${dateStr}</td>
-      <td class="px-3 py-[7px]">${badge}</td>
+      <td class="px-6 py-4">
+        ${_peekCell(r.id, r.api_secret, _revealedSecrets, 'togglePeekSecret', 'text-primary')}
+      </td>
+      <td class="px-6 py-4 text-on-surface-variant">${dateStr}</td>
+      <td class="px-6 py-4">${badge}</td>
     </tr>`;
   }).join('');
   document.getElementById('keys-table-footer').textContent =
@@ -741,7 +841,7 @@ function closeModal(id) {
 // ============================================================
 function esc(s) {
   if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function copyToClipboard(elemId, btn) {
@@ -752,9 +852,13 @@ async function copyToClipboard(elemId, btn) {
 async function copyText(text, btn) {
   try {
     await navigator.clipboard.writeText(text);
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Disalin';
-    setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (icon) {
+      const orig = icon.textContent;
+      icon.textContent = 'check';
+      btn.classList.add('text-tertiary');
+      setTimeout(() => { icon.textContent = orig; btn.classList.remove('text-tertiary'); }, 1500);
+    }
   } catch (e) {
     console.warn('Clipboard write failed', e);
   }
@@ -764,6 +868,17 @@ async function copyText(text, btn) {
 ['modal-create','modal-created','modal-revoke'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if (e.target === this) closeModal(id);
+  });
+});
+
+// Parallax ambient glows
+document.addEventListener('mousemove', (e) => {
+  const glows = document.querySelectorAll('.glow-violet, .glow-cyan');
+  const x = e.clientX / window.innerWidth;
+  const y = e.clientY / window.innerHeight;
+  glows.forEach((glow, idx) => {
+    const move = idx === 0 ? 20 : -30;
+    glow.style.transform = `translate(${x * move}px, ${y * move}px)`;
   });
 });
 

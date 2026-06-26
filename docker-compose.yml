@@ -133,8 +133,9 @@ services:
       - api
     environment:
       API_URL: "http://api:8000/facepp/v3/compare"
-      API_KEY: "REZAcSlN39Ca85vmKD2oT6uCfhR6LCa61Pjz"
-      API_SECRET: "REZA0CU3CTl71Xif8NvWR96WSeBK6MhMBcCK"
+      # Credentials come from .env (never hard-code real keys here).
+      API_KEY: "${DEMO_API_KEY:-}"
+      API_SECRET: "${DEMO_API_SECRET:-}"
       SAMPLE_DIR: "/app/samples"
       SAMPLE_A: "face1.jpg"
       SAMPLE_B: "face2.jpg"

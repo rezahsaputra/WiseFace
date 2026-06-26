@@ -21,11 +21,12 @@ venv/
 *.log
 smoke-creds.json
 
-# OS / editor
+# OS / editor / local agent config
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 
 # Local model cache (mounted as a Docker volume in prod)
 .deepface/

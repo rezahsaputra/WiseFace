@@ -19,15 +19,17 @@ Caller ──HTTPS──> Nginx (TLS, rate limit) ──> API (FastAPI + Gunicor
                                             Prometheus ──> Grafana dashboard
 ```
 
-Single-host Docker Compose deployment. No database — credentials come from
-config/env, usage data lives in Prometheus. RAM is the binding constraint, so
-every container has an explicit `mem_limit`.
+Single-host Docker Compose deployment. A lightweight SQLite database (WAL mode,
+shared by the `api` and `admin` services) holds API-key credentials and per-request
+usage logs; live metrics still flow to Prometheus. RAM is the binding constraint,
+so every container has an explicit `mem_limit`.
 
 | Service | Image | Mem cap | Purpose |
 |---|---|---|---|
-| `api` | built from `app/` | 7 GB | Face compare + `/metrics` |
-| `nginx` | nginx:1.27-alpine | 128 MB | TLS termination, rate limiting |
-| `prometheus` | prom/prometheus:v2.55.1 | 512 MB | Metrics storage (30d retention) |
+| `api` | built from `app/` | 25 GB | Face compare + `/metrics` |
+| `admin` | built from `admin/` | 256 MB | Admin panel: API-key management + usage records |
+| `nginx` | nginx:1.27-alpine | 256 MB | TLS termination, rate limiting |
+| `prometheus` | prom/prometheus:v2.55.1 | 1 GB | Metrics storage (30d retention) |
 | `grafana` | grafana:11.4.0 | 512 MB | Usage/monitoring dashboard |
 
 ## Quickstart
@@ -48,7 +50,8 @@ curl -k https://localhost/health
 ```
 
 - Compare endpoint: `https://localhost/facepp/v3/compare` (alias: `/v3/compare`)
-- Grafana: `http://localhost:3000` (login from `.env`)
+- Grafana: `http://localhost:3001` (login from `.env`)
+- Admin panel: `http://localhost:8080` (login with `ADMIN_USER` / `ADMIN_PASSWORD`) — generate/revoke API keys and view usage by hour/day/month/year. Keep this port firewalled; do not expose it to the internet.
 
 > First container start downloads the Facenet512 weights into the
 > `deepface_weights` volume; subsequent restarts reuse them.
@@ -171,3 +174,7 @@ This repo implements **Milestone 1 (Core Service Development)**: the compare
 endpoint, metrics, Grafana dashboard, Docker Compose with `mem_limit`, and the
 unit/contract test suite. Calibration values (`CONFIDENCE_*`, `THRESHOLD_*`) are
 placeholders pending the **Milestone 0** FAR/FRR validation set.
+
+## License
+
+Released under the [MIT License](LICENSE).

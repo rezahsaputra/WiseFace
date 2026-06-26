@@ -13,13 +13,13 @@
     },
     {
       "key": "api_key",
-      "value": "REZAcSlN39Ca85vmKD2oT6uCfhR6LCa61Pjz",
-      "description": "API key — passed as ?api_key= query parameter."
+      "value": "YOUR_API_KEY",
+      "description": "API key — passed as ?api_key= query parameter. Set your own in the Variables tab."
     },
     {
       "key": "api_secret",
-      "value": "REZA0CU3CTl71Xif8NvWR96WSeBK6MhMBcCK",
-      "description": "API secret — passed as ?api_secret= query parameter."
+      "value": "YOUR_API_SECRET",
+      "description": "API secret — passed as ?api_secret= query parameter. Set your own in the Variables tab."
     }
   ],
   "item": [
