@@ -1,5 +1,11 @@
 # Self-Hosted Face Compare API
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 A stateless, self-hosted **drop-in replacement for the Face++ Compare API**. It
 accepts two images, detects and embeds a face in each (Facenet512 via DeepFace),
 and returns a `confidence` score plus calibrated `thresholds` — mirroring the
