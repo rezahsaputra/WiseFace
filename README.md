@@ -1,5 +1,6 @@
 # Self-Hosted Face Compare API
 
+[![CI](https://github.com/rezahsaputra/WiseFace/actions/workflows/ci.yml/badge.svg)](https://github.com/rezahsaputra/WiseFace/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
