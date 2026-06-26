@@ -34,6 +34,9 @@ so every container has an explicit `mem_limit`.
 
 ## Quickstart
 
+> Full step-by-step setup, hardware sizing, and troubleshooting:
+> **[INSTALLATION.md](INSTALLATION.md)**.
+
 ```bash
 # 1. Configure
 cp .env.example .env
